@@ -216,8 +216,15 @@ const EN = {
   'როლი': 'Role',
   'არცერთი': 'None',
   'ახალი პაროლი': 'New password',
-  'ახალ მომხმარებელს გადაეცით საიტის მისამართი, ელფოსტა და პაროლი. პაროლის შესაცვლელად დააჭირეთ "ახალი პაროლი".':
-    'Give a new person the site address, their email and password. To change a password, click "New password".',
+  'ახალ მომხმარებელს გადაეცით საიტის მისამართი, ელფოსტა და დროებითი პაროლი - პირველ შესვლისას საკუთარს აირჩევს. დავიწყებული პაროლისთვის დააჭირეთ "ახალი პაროლი".':
+    'Give a new person the site address, their email and a temporary password - they choose their own at the first sign-in. For a forgotten password, click "New password".',
+  'აირჩიეთ საკუთარი პაროლი': 'Choose your own password',
+  'ადმინისტრატორმა დროებითი პაროლი მოგცათ. ჩაწერეთ საკუთარი - მას მხოლოდ თქვენ გეცოდინებით.': 'An administrator gave you a temporary password. Choose your own - only you will know it.',
+  'გაიმეორეთ': 'Repeat it',
+  'შენახვა და გაგრძელება': 'Save and continue',
+  'პაროლები არ ემთხვევა.': 'The passwords do not match.',
+  'ახალი პაროლი დროებითისგან უნდა განსხვავდებოდეს.': 'The new password must differ from the temporary one.',
+  'პაროლი შეიცვალა': 'Password changed',
   '(დასრულებული)': '(finished)',
   'პროექტები ჯერ არ არის.': 'No projects yet.',
   'ახალი მომხმარებელი': 'New person',

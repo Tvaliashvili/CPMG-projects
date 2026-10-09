@@ -35,6 +35,21 @@
     </form>
   </main>
 
+  <!-- After an administrator set the password: the person chooses their own before going on -->
+  <main id="choose-password" class="login hidden">
+    <form id="choose-password-form" class="login-card">
+      <button type="button" class="lang-switch" data-lang-switch data-no-t>EN</button>
+      <img class="login-logo" src="img/logo.png" alt="CPMG - Project Management Company" />
+      <h2>აირჩიეთ საკუთარი პაროლი</h2>
+      <p class="muted small" style="margin:0">ადმინისტრატორმა დროებითი პაროლი მოგცათ. ჩაწერეთ საკუთარი - მას მხოლოდ თქვენ გეცოდინებით.</p>
+      <label>ახალი პაროლი<input name="password" type="password" minlength="8" autocomplete="new-password" required /></label>
+      <label>გაიმეორეთ<input name="again" type="password" minlength="8" autocomplete="new-password" required /></label>
+      <p class="form-error" hidden></p>
+      <button class="btn btn-primary" type="submit">შენახვა და გაგრძელება</button>
+      <button class="btn btn-ghost" type="button" data-choose-sign-out>გასვლა</button>
+    </form>
+  </main>
+
   <div id="app" class="hidden">
     <header class="topbar">
       <a class="brand" href="#/"><img src="img/logo-mark.png" alt="CPMG" /></a>

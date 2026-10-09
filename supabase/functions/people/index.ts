@@ -1,7 +1,7 @@
 // =============================================================
 // people - an admin adds a person, sets a new password, or removes one.
-// Sign-up is closed: every account is made here, with a password the admin
-// passes on (e.g. on WhatsApp); the person can change it after signing in.
+// Sign-up is closed: every account is made here, with a temporary password the
+// admin passes on (e.g. on WhatsApp); at the first sign-in the person must choose their own.
 //
 //   { action: "add", email, full_name, full_name_en?, role, company?, company_en?, password, project_ids? }
 //   { action: "password", user_id, password }
@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
     const id = made.user.id;
     const { error: rowError } = await admin.from("people").insert({
       user_id: id, email, full_name: fullName, role,
+      must_change_password: true, // the password above is the admin's; they choose their own at sign-in
       full_name_en: String(body.full_name_en ?? "").trim() || null,
       company: String(body.company ?? "").trim() || null,
       company_en: String(body.company_en ?? "").trim() || null,
@@ -80,7 +81,10 @@ Deno.serve(async (req) => {
   if (body.action === "password") {
     if (!goodPassword) return json({ error: "პაროლი მინიმუმ 8 სიმბოლო უნდა იყოს." }, 400);
     const { error } = await admin.auth.admin.updateUserById(target, { password });
-    return error ? json({ error: error.message }, 400) : json({ ok: true });
+    if (error) return json({ error: error.message }, 400);
+    // A password set by an admin is temporary: the person chooses their own at the next sign-in.
+    await admin.from("people").update({ must_change_password: true }).eq("user_id", target);
+    return json({ ok: true });
   }
 
   if (body.action === "remove") {

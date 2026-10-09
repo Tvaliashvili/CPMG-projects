@@ -359,3 +359,17 @@ begin
   end if;
   return new;
 end $$;
+
+-- =============================================================
+-- A password an administrator sets is temporary: at the next sign-in the
+-- person must choose their own, so nobody else knows it.
+-- =============================================================
+alter table public.people add column if not exists must_change_password boolean not null default false;
+
+-- Called by the person once they have chosen their own password.
+create or replace function public.password_changed() returns void
+language sql security definer set search_path = public as $$
+  update public.people set must_change_password = false where user_id = auth.uid()
+$$;
+revoke all on function public.password_changed() from public, anon;
+grant execute on function public.password_changed() to authenticated;

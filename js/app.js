@@ -10,7 +10,7 @@ import { renderContractors } from './contractors.js';
 import { renderMoney } from './money.js';
 import { renderReport } from './report.js';
 import { renderPeople } from './people.js';
-import { startLanguage } from './i18n.js';
+import { startLanguage, tr } from './i18n.js';
 
 const view = $('#view');
 startLanguage(); // ქარ / EN
@@ -44,6 +44,32 @@ $('#login-form').addEventListener('submit', async (e) => {
 // (a changed password ends every session there).
 $('#sign-out').addEventListener('click', () => signOutHere());
 
+// Choosing one's own password, after an administrator set a temporary one.
+$('[data-choose-sign-out]').addEventListener('click', () => signOutHere());
+$('#choose-password-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const error = $('.form-error', form);
+  const fail = (text) => { error.textContent = text; error.hidden = false; $$('button', form).forEach((b) => { b.disabled = false; }); };
+  error.hidden = true;
+  const password = form.password.value;
+  if (password !== form.again.value) return fail(tr('პაროლები არ ემთხვევა.'));
+  $$('button', form).forEach((b) => { b.disabled = true; });
+  const { error: failed } = await db.auth.updateUser({ password });
+  if (failed) {
+    return fail(/different|same/i.test(failed.message) ? tr('ახალი პაროლი დროებითისგან უნდა განსხვავდებოდეს.') : failed.message);
+  }
+  await db.rpc('password_changed');
+  // A new password can end the session on the server: signing in again with it keeps going.
+  await db.auth.signInWithPassword({ email: state.me.email, password });
+  state.me.must_change_password = false;
+  form.reset();
+  $$('button', form).forEach((b) => { b.disabled = false; });
+  $('#choose-password').classList.add('hidden');
+  openApp();
+  toast(tr('პაროლი შეიცვალა'));
+});
+
 let signedInAs; // undefined until the first answer, so "signed out" is shown too
 db.auth.onAuthStateChange((_event, session) => {
   // Deferred: Supabase asks that its client not be awaited inside this callback.
@@ -57,6 +83,7 @@ async function onSession(session) {
   if (!userId) {
     state.me = null;
     $('#app').classList.add('hidden');
+    $('#choose-password').classList.add('hidden');
     $('#login').classList.remove('hidden');
     return;
   }
@@ -76,6 +103,15 @@ async function onSession(session) {
     await signOutHere();
     return;
   }
+  if (state.me.must_change_password) { // the password was an administrator's
+    $('#login').classList.add('hidden');
+    $('#choose-password').classList.remove('hidden');
+    return;
+  }
+  openApp();
+}
+
+function openApp() {
   $('#me-name').textContent = pick(state.me, 'full_name');
   $$('[data-admin]').forEach((el) => { el.hidden = !isAdmin(); });
   $('#login').classList.add('hidden');
