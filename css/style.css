@@ -177,7 +177,13 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 
 /* ---------- Phones ---------- */
 @media (max-width: 640px) {
-  .topbar { gap: 0.8rem; padding: 0.6rem 1rem; }
+  /* Two rows: the logo with the language and sign-out buttons, then the menu across the width. */
+  .topbar { flex-wrap: wrap; gap: 0.5rem 0.8rem; padding: 0.6rem 1rem 0; }
+  .me { flex-shrink: 0; gap: 0.5rem; }
+  .me-name { display: none; }
+  .topnav { order: 3; flex: 1 1 100%; gap: 0; border-top: 1px solid var(--line); margin: 0 -1rem; padding: 0 1rem; }
+  .topnav a { flex: 1; padding: 0.55rem 0; text-align: center; border-bottom: 2px solid transparent; }
+  .topnav a.active { border-bottom-color: var(--navy); }
   .brand img { height: 28px; }
   .view { padding: 1rem; }
   .dialog .row { grid-template-columns: 1fr; }
