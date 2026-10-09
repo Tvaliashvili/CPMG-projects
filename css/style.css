@@ -223,7 +223,8 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 @media print {
   @page { size: A4; margin: 12mm; }
   body { background: #fff; font-size: 12px; }
-  .topbar, .tabs, .project-head .btn, .no-print, .toast { display: none !important; }
+  /* Only the report itself: not the page's header with the project's name above it */
+  .topbar, .tabs, .project-head, .no-print, .toast { display: none !important; }
   .view { max-width: none; padding: 0; }
   .card, .stat, .table-wrap { border-color: #cbd5e1; }
   th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
