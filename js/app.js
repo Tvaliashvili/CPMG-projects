@@ -33,7 +33,7 @@ $('#login-form').addEventListener('submit', async (e) => {
 
 $('#sign-out').addEventListener('click', () => db.auth.signOut());
 
-let signedInAs = null;
+let signedInAs; // undefined until the first answer, so "signed out" is shown too
 db.auth.onAuthStateChange((_event, session) => {
   // Deferred: Supabase asks that its client not be awaited inside this callback.
   setTimeout(() => onSession(session), 0);
