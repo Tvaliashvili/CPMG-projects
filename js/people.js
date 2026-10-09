@@ -1,12 +1,12 @@
 // People (administrators only): who can sign in, their role, and which projects a subcontractor sees.
 import { db, q, peopleCall } from './db.js';
-import { $, $$, esc, toast, openForm, options } from './ui.js';
+import { $, $$, esc, toast, openForm, options, pick, pair, texts } from './ui.js';
 import { state, ROLE_NAMES } from './state.js';
 import { tr } from './i18n.js';
 
 const ROLE_HELP = {
   admin: 'ყველაფერი, მათ შორის მომხმარებლების მართვა',
-  staff: 'ყველა პროექტი: ჟურნალი, გრაფიკი, კონტრაქტორები, ფინანსები',
+  staff: 'ხედავს ყველა პროექტს; წერს მხოლოდ დღიურ ჟურნალს',
   subcontractor: 'მხოლოდ მონიშნული პროექტების ჟურნალი და გრაფიკი, ფინანსების გარეშე',
 };
 
@@ -25,7 +25,7 @@ export async function renderPeople(el) {
     q(db.from('projects').select('id, name, archived').order('name')),
     q(db.from('project_people').select('*')),
   ]);
-  const projectsOf = (id) => links.filter((l) => l.user_id === id).map((l) => projects.find((p) => p.id === l.project_id)?.name).filter(Boolean);
+  const projectsOf = (id) => links.filter((l) => l.user_id === id).map((l) => pick(projects.find((p) => p.id === l.project_id), 'name')).filter(Boolean);
 
   el.innerHTML = `
     <div class="page-head">
@@ -37,7 +37,7 @@ export async function renderPeople(el) {
         <thead><tr><th>სახელი</th><th>როლი</th><th class="hide-phone">პროექტები</th><th></th></tr></thead>
         <tbody>${people.map((p) => `
           <tr>
-            <td><b>${esc(p.full_name)}</b><br><span class="muted small">${esc(p.email)}</span>${p.company ? `<br><span class="small">${esc(p.company)}</span>` : ''}</td>
+            <td><b>${esc(pick(p, 'full_name'))}</b><br><span class="muted small">${esc(p.email)}</span>${pick(p, 'company') ? `<br><span class="small">${esc(pick(p, 'company'))}</span>` : ''}</td>
             <td>${ROLE_NAMES[p.role]}</td>
             <td class="hide-phone small">${p.role === 'subcontractor' ? esc(projectsOf(p.user_id).join(', ')) || '<span class="bad">არცერთი</span>' : '<span class="muted">ყველა</span>'}</td>
             <td class="num">
@@ -58,7 +58,7 @@ export async function renderPeople(el) {
 function projectChecks(projects, chosen) {
   return projects.length
     ? `<div class="checks">${projects.map((p) => `
-        <label class="check"><input type="checkbox" name="project" value="${p.id}" ${chosen.includes(p.id) ? 'checked' : ''}> ${esc(p.name)}${p.archived ? ' <span class="muted small">(დასრულებული)</span>' : ''}</label>`).join('')}</div>`
+        <label class="check"><input type="checkbox" name="project" value="${p.id}" ${chosen.includes(p.id) ? 'checked' : ''}> ${esc(pick(p, 'name'))}${p.archived ? ' <span class="muted small">(დასრულებული)</span>' : ''}</label>`).join('')}</div>`
     : '<p class="muted small" style="margin:0">პროექტები ჯერ არ არის.</p>';
 }
 
@@ -66,14 +66,14 @@ function personForm(person, { el, projects, links }) {
   const isMe = person?.user_id === state.me.user_id;
   const chosen = person ? links.filter((l) => l.user_id === person.user_id).map((l) => l.project_id) : [];
   openForm({
-    title: person ? person.full_name : 'ახალი მომხმარებელი',
+    title: person ? pick(person, 'full_name') : 'ახალი მომხმარებელი',
     body: `
-      <label>სახელი და გვარი<input name="full_name" required maxlength="120" value="${esc(person?.full_name)}"></label>
+      ${pair('სახელი და გვარი', 'full_name', person, { required: true, maxlength: 120 })}
       ${person ? '' : '<label>ელფოსტა<input name="email" type="email" required autocomplete="off"></label>'}
       <label>როლი<select name="role" ${isMe ? 'disabled' : ''}>${options(Object.entries(ROLE_NAMES), person?.role ?? 'staff')}</select></label>
       <p class="muted small" style="margin:-0.4rem 0 0" data-role-help></p>
       <div data-sub>
-        <label>კომპანია<input name="company" maxlength="120" placeholder="ქვეკონტრაქტორის კომპანია" value="${esc(person?.company)}"></label>
+        ${pair('კომპანია', 'company', person, { maxlength: 120, placeholder: 'ქვეკონტრაქტორის კომპანია' })}
         <div style="margin-top:0.8rem"><div class="log-label">რომელ პროექტებს ხედავს</div>${projectChecks(projects, chosen)}</div>
       </div>
       ${person ? '' : `<label>პაროლი<input name="password" required minlength="8" value="${newPassword()}"></label>`}`,
@@ -89,17 +89,17 @@ function personForm(person, { el, projects, links }) {
     },
     onSubmit: async (form, data) => {
       const role = isMe ? person.role : data.get('role');
-      const company = data.get('company').trim() || null;
+      const names = { ...texts(data, 'full_name'), ...texts(data, 'company') };
       const projectIds = role === 'subcontractor' ? data.getAll('project') : [];
       if (!person) {
         const email = data.get('email').trim().toLowerCase();
         const password = data.get('password');
-        await peopleCall({ action: 'add', email, password, full_name: data.get('full_name').trim(), role, company, project_ids: projectIds });
+        await peopleCall({ action: 'add', email, password, ...names, role, project_ids: projectIds });
         showCredentials(email, password);
         renderPeople(el);
         return true; // the form now shows what to pass on
       }
-      await q(db.from('people').update({ full_name: data.get('full_name').trim(), role, company }).eq('user_id', person.user_id));
+      await q(db.from('people').update({ ...names, role }).eq('user_id', person.user_id));
       await q(db.from('project_people').delete().eq('user_id', person.user_id));
       if (projectIds.length) await q(db.from('project_people').insert(projectIds.map((id) => ({ project_id: id, user_id: person.user_id }))));
       toast('შენახულია');
@@ -115,7 +115,7 @@ function personForm(person, { el, projects, links }) {
 
 function passwordForm(person) {
   openForm({
-    title: `ახალი პაროლი - ${person.full_name}`,
+    title: `ახალი პაროლი - ${pick(person, 'full_name')}`,
     body: `<label>პაროლი<input name="password" required minlength="8" value="${newPassword()}"></label>`,
     onSubmit: async (form, data) => {
       await peopleCall({ action: 'password', user_id: person.user_id, password: data.get('password') });

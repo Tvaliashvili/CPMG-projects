@@ -1,6 +1,6 @@
 // What the app knows right now: who is signed in, and the open project's data.
 import { db, q } from './db.js';
-import { daysBetween } from './ui.js';
+import { daysBetween, pick } from './ui.js';
 
 export const state = {
   me: null,               // this person's row in "people"
@@ -54,7 +54,7 @@ export async function reloadMoney() {
   state.money = await q(db.from('money').select('*').eq('project_id', state.project.id).order('entry_date').order('created_at'));
 }
 
-export const contractorName = (id) => state.contractors.find((c) => c.id === id)?.name ?? '';
+export const contractorName = (id) => pick(state.contractors.find((c) => c.id === id), 'name');
 
 // ---------- Timetable progress ----------
 export const STATUS = {

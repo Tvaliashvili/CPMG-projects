@@ -1,6 +1,6 @@
 // Daily log: one entry a day - weather, workers, the work done, notes and photos.
 import { db, q } from './db.js';
-import { $, $$, esc, fmtDate, weekday, todayISO, toast, openForm, options, showPhoto } from './ui.js';
+import { $, $$, esc, fmtDate, weekday, todayISO, toast, openForm, options, showPhoto, pick, pair, texts } from './ui.js';
 import { state, isStaff, reloadLogs } from './state.js';
 
 const WEATHER = ['მზიანი', 'ღრუბლიანი', 'წვიმა', 'თოვლი', 'ქარიანი', 'ცხელი', 'ყინვა'];
@@ -40,10 +40,10 @@ function logCard(l) {
           ${isStaff() ? `<button class="btn btn-ghost btn-sm" data-edit-log="${l.id}">რედაქტირება</button>` : ''}
         </div>
       </div>
-      ${l.work_done ? `<div><div class="log-label">შესრულებული სამუშაო</div><p>${esc(l.work_done)}</p></div>` : ''}
-      ${l.notes ? `<div><div class="log-label">შენიშვნები</div><p>${esc(l.notes)}</p></div>` : ''}
+      ${pick(l, 'work_done') ? `<div><div class="log-label">შესრულებული სამუშაო</div><p>${esc(pick(l, 'work_done'))}</p></div>` : ''}
+      ${pick(l, 'notes') ? `<div><div class="log-label">შენიშვნები</div><p>${esc(pick(l, 'notes'))}</p></div>` : ''}
       ${l.log_photos.length ? `<div class="photos">${l.log_photos.map((ph) => `<button type="button" data-photo="${esc(ph.path)}"><img alt="" data-thumb="${esc(thumbOf(ph.path))}"></button>`).join('')}</div>` : ''}
-      ${l.author_name ? `<span class="muted small">ავტორი: ${esc(l.author_name)}</span>` : ''}
+      ${pick(l, 'author_name') ? `<span class="muted small">ავტორი: ${esc(pick(l, 'author_name'))}</span>` : ''}
     </article>`;
 }
 
@@ -108,8 +108,8 @@ function logForm(log, el) {
         <label>ამინდი<select name="weather"><option value=""></option>${options(WEATHER.map((w) => [w, w]), log?.weather)}</select></label>
       </div>
       <label>მუშების რაოდენობა<input name="workers" type="number" min="0" max="2000" inputmode="numeric" value="${esc(log?.workers)}"></label>
-      <label>შესრულებული სამუშაო<textarea name="work_done" rows="5" placeholder="რა გაკეთდა, სად, ვინ">${esc(log?.work_done)}</textarea></label>
-      <label>შენიშვნები<textarea name="notes" rows="3">${esc(log?.notes)}</textarea></label>
+      ${pair('შესრულებული სამუშაო', 'work_done', log, { textarea: true, rows: 4, placeholder: 'რა გაკეთდა, სად, ვინ' })}
+      ${pair('შენიშვნები', 'notes', log, { textarea: true, rows: 2 })}
       ${log?.log_photos.length ? `
         <div><div class="log-label">მონიშნეთ წასაშლელი ფოტოები</div>
           <div class="photo-pick">${log.log_photos.map((ph) => `
@@ -125,8 +125,8 @@ function logForm(log, el) {
         log_date: data.get('log_date'),
         weather: data.get('weather') || null,
         workers: workers === '' ? null : Number(workers),
-        work_done: data.get('work_done').trim() || null,
-        notes: data.get('notes').trim() || null,
+        ...texts(data, 'work_done'),
+        ...texts(data, 'notes'),
       };
       // Once saved, a retry (say, after a photo failed to upload) changes this log - never adds a second.
       const saved = current

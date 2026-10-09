@@ -1,6 +1,6 @@
 // Daily report: one day's log on one page - print it, or save it as a PDF from the print window.
 import { db } from './db.js';
-import { $, $$, esc, fmtDate, weekday } from './ui.js';
+import { $, $$, esc, fmtDate, weekday, pick } from './ui.js';
 import { state } from './state.js';
 
 export async function renderDayReport(el, logId) {
@@ -21,8 +21,8 @@ export async function renderDayReport(el, logId) {
       <div class="report-head">
         <div>
           <img class="report-logo" src="img/logo-mark.png" alt="CPMG">
-          <h1 style="margin-top:0.6rem">${esc(p.name)}</h1>
-          <p class="muted" style="margin:0.2rem 0 0">${[p.client && `დამკვეთი: ${esc(p.client)}`, p.address && esc(p.address)].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
+          <h1 style="margin-top:0.6rem">${esc(pick(p, 'name'))}</h1>
+          <p class="muted" style="margin:0.2rem 0 0">${[pick(p, 'client') && `დამკვეთი: ${esc(pick(p, 'client'))}`, pick(p, 'address') && esc(pick(p, 'address'))].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
         </div>
         <div style="text-align:right">
           <b>დღიური ანგარიში</b><br>
@@ -39,13 +39,13 @@ export async function renderDayReport(el, logId) {
 
       <section class="card">
         <h2>შესრულებული სამუშაო</h2>
-        <p style="margin:0;white-space:pre-line">${esc(l.work_done) || '<span class="muted">-</span>'}</p>
+        <p style="margin:0;white-space:pre-line">${esc(pick(l, 'work_done')) || '<span class="muted">-</span>'}</p>
       </section>
 
-      ${l.notes ? `
+      ${pick(l, 'notes') ? `
       <section class="card">
         <h2>შენიშვნები</h2>
-        <p style="margin:0;white-space:pre-line">${esc(l.notes)}</p>
+        <p style="margin:0;white-space:pre-line">${esc(pick(l, 'notes'))}</p>
       </section>` : ''}
 
       ${l.log_photos.length ? `
@@ -54,7 +54,7 @@ export async function renderDayReport(el, logId) {
         <div class="day-photos">${l.log_photos.map((ph) => `<img alt="" data-full="${esc(ph.path)}">`).join('')}</div>
       </section>` : ''}
 
-      ${l.author_name ? `<p class="muted small" style="margin:0">ავტორი: ${esc(l.author_name)}</p>` : ''}
+      ${pick(l, 'author_name') ? `<p class="muted small" style="margin:0">ავტორი: ${esc(pick(l, 'author_name'))}</p>` : ''}
     </div>`;
 
   $('[data-print]', el).addEventListener('click', () => window.print());

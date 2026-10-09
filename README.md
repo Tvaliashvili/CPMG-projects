@@ -10,8 +10,8 @@ contractors and their contracts, money in and out, and a one-page project report
 
 | Role | Sees |
 |---|---|
-| Administrator | Everything, and manages people |
-| Staff | Every project: daily logs, timetable, contractors, money, report |
+| Administrator | Everything: projects, timetable, documents, contractors, money, people |
+| Staff | Every project to read, money included; writes daily logs only |
 | Subcontractor | Only the projects they are added to: daily logs and timetable, read-only, no money |
 
 The database enforces this (`supabase/schema.sql`), not only the screens.

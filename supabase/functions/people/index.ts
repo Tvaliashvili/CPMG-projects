@@ -3,7 +3,7 @@
 // Sign-up is closed: every account is made here, with a password the admin
 // passes on (e.g. on WhatsApp); the person can change it after signing in.
 //
-//   { action: "add", email, full_name, role, company?, password, project_ids? }
+//   { action: "add", email, full_name, full_name_en?, role, company?, company_en?, password, project_ids? }
 //   { action: "password", user_id, password }
 //   { action: "remove", user_id }
 // =============================================================
@@ -58,7 +58,10 @@ Deno.serve(async (req) => {
     }
     const id = made.user.id;
     const { error: rowError } = await admin.from("people").insert({
-      user_id: id, email, full_name: fullName, role, company: String(body.company ?? "").trim() || null,
+      user_id: id, email, full_name: fullName, role,
+      full_name_en: String(body.full_name_en ?? "").trim() || null,
+      company: String(body.company ?? "").trim() || null,
+      company_en: String(body.company_en ?? "").trim() || null,
     });
     if (rowError) {
       await admin.auth.admin.deleteUser(id); // no half-made account

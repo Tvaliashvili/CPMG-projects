@@ -1,7 +1,7 @@
 // Timetable: the work items with their dates, who does them and how far they are, as bars on a time line.
 import { db, q } from './db.js';
-import { $, $$, esc, fmtDate, todayISO, toast, openForm, options, daysBetween, MONTHS_SHORT } from './ui.js';
-import { state, isStaff, reloadTasks, contractorName, taskStatus, STATUS, progressOf } from './state.js';
+import { $, $$, esc, fmtDate, todayISO, toast, openForm, options, daysBetween, MONTHS_SHORT, pick, pair, texts } from './ui.js';
+import { state, isAdmin, reloadTasks, contractorName, taskStatus, STATUS, progressOf } from './state.js';
 
 export async function renderTimetable(el) {
   const today = todayISO();
@@ -13,7 +13,7 @@ export async function renderTimetable(el) {
   el.innerHTML = `
     <div class="page-head">
       <h2>გრაფიკი</h2>
-      ${isStaff() ? '<button class="btn btn-primary" data-new-task>+ სამუშაოს დამატება</button>' : ''}
+      ${isAdmin() ? '<button class="btn btn-primary" data-new-task>+ სამუშაოს დამატება</button>' : ''}
     </div>
     ${tasks.length ? `
       <div class="stats" style="margin-bottom:1rem">
@@ -30,10 +30,10 @@ export async function renderTimetable(el) {
           </tr></thead>
           <tbody>${tasks.map((t) => row(t, today, range)).join('')}</tbody>
         </table>
-      </div>` : `<div class="empty">${isStaff() ? 'გრაფიკი ცარიელია. დაამატეთ პირველი სამუშაო.' : 'გრაფიკი ჯერ არ არის.'}</div>`}`;
+      </div>` : `<div class="empty">${isAdmin() ? 'გრაფიკი ცარიელია. დაამატეთ პირველი სამუშაო.' : 'გრაფიკი ჯერ არ არის.'}</div>`}`;
 
   $('[data-new-task]', el)?.addEventListener('click', () => taskForm(null, el));
-  if (isStaff()) {
+  if (isAdmin()) {
     $$('[data-task]', el).forEach((tr) => tr.addEventListener('click', () => taskForm(state.tasks.find((t) => t.id === tr.dataset.task), el)));
   }
 }
@@ -45,8 +45,8 @@ function row(t, today, range) {
   const left = pct(t.start_date);
   const width = Math.max(pct(t.end_date) + 100 / range.days - left, 0.8);
   return `
-    <tr ${isStaff() ? `class="click" data-task="${t.id}"` : ''}>
-      <td><b>${esc(t.name)}</b>${t.notes ? `<br><span class="muted small">${esc(t.notes)}</span>` : ''}
+    <tr ${isAdmin() ? `class="click" data-task="${t.id}"` : ''}>
+      <td><b>${esc(pick(t, 'name'))}</b>${pick(t, 'notes') ? `<br><span class="muted small">${esc(pick(t, 'notes'))}</span>` : ''}
         ${t.contractor_id ? `<span class="muted small show-phone">${esc(contractorName(t.contractor_id))}</span>` : ''}</td>
       <td class="hide-phone">${esc(contractorName(t.contractor_id)) || '<span class="muted">-</span>'}</td>
       <td class="small" style="white-space:nowrap">${fmtDate(t.start_date)}<br>${fmtDate(t.end_date)}</td>
@@ -95,27 +95,27 @@ function scale(range) {
 }
 
 function taskForm(t, el) {
-  const contractors = [['', '-'], ...state.contractors.map((c) => [c.id, c.name])];
+  const contractors = [['', '-'], ...state.contractors.map((c) => [c.id, pick(c, 'name')])];
   openForm({
     title: t ? 'სამუშაოს რედაქტირება' : 'ახალი სამუშაო',
     body: `
-      <label>სამუშაო<input name="name" required maxlength="200" value="${esc(t?.name)}"></label>
+      ${pair('სამუშაო', 'name', t, { required: true, maxlength: 200 })}
       <label>კონტრაქტორი<select name="contractor_id">${options(contractors, t?.contractor_id)}</select></label>
       <div class="row">
         <label>დაწყება<input name="start_date" type="date" required value="${esc(t?.start_date ?? state.project.start_date ?? todayISO())}"></label>
         <label>დასრულება<input name="end_date" type="date" required value="${esc(t?.end_date ?? '')}"></label>
       </div>
       <label>შესრულება (%)<input name="progress" type="number" min="0" max="100" step="5" inputmode="numeric" required value="${t?.progress ?? 0}"></label>
-      <label>შენიშვნა<input name="notes" maxlength="300" value="${esc(t?.notes)}"></label>
+      ${pair('შენიშვნა', 'notes', t, { maxlength: 300 })}
       ${state.contractors.length ? '' : '<p class="muted small" style="margin:0">კონტრაქტორები ემატება "კონტრაქტორები" გვერდზე.</p>'}`,
     onSubmit: async (form, data) => {
       const row = {
-        name: data.get('name').trim(),
+        ...texts(data, 'name'),
         contractor_id: data.get('contractor_id') || null,
         start_date: data.get('start_date'),
         end_date: data.get('end_date'),
         progress: Math.min(100, Math.max(0, Math.round(Number(data.get('progress'))))),
-        notes: data.get('notes').trim() || null,
+        ...texts(data, 'notes'),
       };
       if (row.end_date < row.start_date) throw new Error('დასრულება დაწყებამდე ვერ იქნება.');
       if (t) await q(db.from('tasks').update(row).eq('id', t.id));

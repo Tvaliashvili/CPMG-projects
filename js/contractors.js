@@ -1,7 +1,7 @@
 // Contractors on the project: what was agreed with each, what they have been paid, what is left.
 import { db, q } from './db.js';
-import { $, $$, esc, lari, toast, openForm, options, numOrNull } from './ui.js';
-import { state, reloadContractors, paidTo } from './state.js';
+import { $, $$, esc, lari, toast, openForm, options, numOrNull, pick, pair, texts } from './ui.js';
+import { state, isAdmin, reloadContractors, paidTo } from './state.js';
 
 /** Everyone working on the project: with a contract, a timetable item or a payment. */
 function onProject() {
@@ -25,7 +25,7 @@ export async function renderContractors(el) {
   el.innerHTML = `
     <div class="page-head">
       <h2>კონტრაქტორები</h2>
-      <button class="btn btn-primary" data-add>+ კონტრაქტორის დამატება</button>
+      ${isAdmin() ? '<button class="btn btn-primary" data-add>+ კონტრაქტორის დამატება</button>' : ''}
     </div>
     ${list.length ? `
       <div class="table-wrap">
@@ -35,10 +35,10 @@ export async function renderContractors(el) {
             <th class="num">ხელშეკრულება</th><th class="num">გადახდილი</th><th class="num">დარჩენილი</th>
           </tr></thead>
           <tbody>${list.map((c) => `
-            <tr class="click" data-contractor="${c.id}">
-              <td><b>${esc(c.name)}</b>${c.trade ? `<br><span class="muted small">${esc(c.trade)}</span>` : ''}
-                ${c.contract?.scope ? `<br><span class="small">${esc(c.contract.scope)}</span>` : ''}</td>
-              <td class="hide-phone small">${[esc(c.contact_person), c.phone ? `<a href="tel:${esc(c.phone)}" data-stop>${esc(c.phone)}</a>` : ''].filter(Boolean).join('<br>') || '<span class="muted">-</span>'}</td>
+            <tr ${isAdmin() ? `class="click" data-contractor="${c.id}"` : ''}>
+              <td><b>${esc(pick(c, 'name'))}</b>${pick(c, 'trade') ? `<br><span class="muted small">${esc(pick(c, 'trade'))}</span>` : ''}
+                ${pick(c.contract, 'scope') ? `<br><span class="small">${esc(pick(c.contract, 'scope'))}</span>` : ''}</td>
+              <td class="hide-phone small">${[esc(pick(c, 'contact_person')), c.phone ? `<a href="tel:${esc(c.phone)}" data-stop>${esc(c.phone)}</a>` : ''].filter(Boolean).join('<br>') || '<span class="muted">-</span>'}</td>
               <td class="num">${c.contract ? lari(c.amount) : '<span class="muted">-</span>'}</td>
               <td class="num">${lari(c.paid)}${c.amount ? `<br><span class="muted small">${Math.round((c.paid / c.amount) * 100)}%</span>` : ''}</td>
               <td class="num ${c.contract && c.left < 0 ? 'bad' : ''}">${c.contract ? lari(c.left) : '<span class="muted">-</span>'}</td>
@@ -52,7 +52,7 @@ export async function renderContractors(el) {
       <p class="muted small">გადახდები ემატება "ფინანსები" გვერდზე, როგორც გასავალი კონტრაქტორზე.</p>`
     : '<div class="empty">ამ პროექტზე კონტრაქტორები ჯერ არ არის.</div>'}`;
 
-  $('[data-add]', el).addEventListener('click', () => contractorForm(null, el));
+  $('[data-add]', el)?.addEventListener('click', () => contractorForm(null, el));
   $$('[data-stop]', el).forEach((a) => a.addEventListener('click', (e) => e.stopPropagation()));
   $$('[data-contractor]', el).forEach((tr) => tr.addEventListener('click', () => contractorForm(list.find((c) => c.id === tr.dataset.contractor), el)));
 }
@@ -60,24 +60,20 @@ export async function renderContractors(el) {
 function contractorForm(c, el) {
   const others = state.contractors.filter((x) => !state.projectContractors.some((pc) => pc.contractor_id === x.id));
   const details = (x) => `
-    <div class="row">
-      <label>დასახელება<input name="name" maxlength="160" value="${esc(x?.name)}" ${x ? 'required' : ''}></label>
-      <label>სამუშაოს სახე<input name="trade" maxlength="120" placeholder="მაგ. ელექტროობა" value="${esc(x?.trade)}"></label>
-    </div>
-    <div class="row">
-      <label>საკონტაქტო პირი<input name="contact_person" maxlength="120" value="${esc(x?.contact_person)}"></label>
-      <label>ტელეფონი<input name="phone" type="tel" maxlength="40" value="${esc(x?.phone)}"></label>
-    </div>`;
+    ${pair('დასახელება', 'name', x, { required: !!x, maxlength: 160 })}
+    ${pair('სამუშაოს სახე', 'trade', x, { maxlength: 120, placeholder: 'მაგ. ელექტროობა' })}
+    ${pair('საკონტაქტო პირი', 'contact_person', x, { maxlength: 120 })}
+    <label>ტელეფონი<input name="phone" type="tel" maxlength="40" value="${esc(x?.phone)}"></label>`;
 
   openForm({
-    title: c ? c.name : 'კონტრაქტორის დამატება',
+    title: c ? pick(c, 'name') : 'კონტრაქტორის დამატება',
     body: `
       ${c ? details(c) : `
         <label>კონტრაქტორი
-          <select name="pick">${options([['new', '+ ახალი კონტრაქტორი'], ...others.map((x) => [x.id, x.name])], c?.id ?? 'new')}</select>
+          <select name="pick">${options([['new', '+ ახალი კონტრაქტორი'], ...others.map((x) => [x.id, pick(x, 'name')])], c?.id ?? 'new')}</select>
         </label>
         <div data-new>${details(null)}</div>`}
-      <label>სამუშაოს აღწერა ამ პროექტზე<input name="scope" maxlength="300" value="${esc(c?.contract?.scope)}"></label>
+      ${pair('სამუშაოს აღწერა ამ პროექტზე', 'scope', c?.contract, { maxlength: 300 })}
       <label>ხელშეკრულების თანხა (₾)<input name="contract_amount" inputmode="decimal" value="${esc(c?.contract?.contract_amount)}"></label>`,
     onOpen: (form) => {
       const pick = form.pick;
@@ -94,9 +90,9 @@ function contractorForm(c, el) {
       const amount = numOrNull(data.get('contract_amount')) ?? 0;
       if (!(amount >= 0)) throw new Error('თანხა რიცხვით ჩაწერეთ.');
       const detailsRow = () => ({
-        name: data.get('name').trim(),
-        trade: data.get('trade').trim() || null,
-        contact_person: data.get('contact_person').trim() || null,
+        ...texts(data, 'name'),
+        ...texts(data, 'trade'),
+        ...texts(data, 'contact_person'),
         phone: data.get('phone').trim() || null,
       });
       let id = c?.id;
@@ -109,7 +105,7 @@ function contractorForm(c, el) {
       }
       await q(db.from('project_contractors').upsert({
         project_id: state.project.id, contractor_id: id,
-        scope: data.get('scope').trim() || null, contract_amount: amount,
+        ...texts(data, 'scope'), contract_amount: amount,
       }));
       await reloadContractors();
       toast('შენახულია');

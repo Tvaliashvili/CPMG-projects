@@ -1,5 +1,5 @@
 // Project report: the whole project on one page - print it, or save it as a PDF from the print window.
-import { $, esc, lari, fmtDate, monthName, todayISO, daysBetween, weekday } from './ui.js';
+import { $, esc, lari, fmtDate, monthName, todayISO, daysBetween, weekday, pick } from './ui.js';
 import { state, contractorName, taskStatus, STATUS, progressOf, moneyTotals, moneyByMonth, paidTo } from './state.js';
 import { drawChart } from './money.js';
 
@@ -14,7 +14,7 @@ export async function renderReport(el) {
   const avgWorkers = week.length ? Math.round(week.reduce((s, l) => s + (l.workers ?? 0), 0) / week.length) : null;
   const daysLeft = p.end_date ? daysBetween(today, p.end_date) : null;
   const contracts = state.projectContractors.map((pc) => ({
-    name: contractorName(pc.contractor_id), scope: pc.scope, amount: Number(pc.contract_amount), paid: paidTo(pc.contractor_id),
+    name: contractorName(pc.contractor_id), scope: pick(pc, 'scope'), amount: Number(pc.contract_amount), paid: paidTo(pc.contractor_id),
   })).sort((a, b) => b.amount - a.amount);
 
   el.innerHTML = `
@@ -26,8 +26,8 @@ export async function renderReport(el) {
       <div class="report-head">
         <div>
           <img class="report-logo" src="img/logo-mark.png" alt="CPMG">
-          <h1 style="margin-top:0.6rem">${esc(p.name)}</h1>
-          <p class="muted" style="margin:0.2rem 0 0">${[p.client && `დამკვეთი: ${esc(p.client)}`, p.address && esc(p.address)].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
+          <h1 style="margin-top:0.6rem">${esc(pick(p, 'name'))}</h1>
+          <p class="muted" style="margin:0.2rem 0 0">${[pick(p, 'client') && `დამკვეთი: ${esc(pick(p, 'client'))}`, pick(p, 'address') && esc(pick(p, 'address'))].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
         </div>
         <div style="text-align:right">
           <b>პროექტის ანგარიში</b><br><span class="muted small">${fmtDate(today)}</span>
@@ -48,7 +48,7 @@ export async function renderReport(el) {
             <thead><tr><th>სამუშაო</th><th>კონტრაქტორი</th><th>ვადები</th><th class="num">შესრულება</th><th>სტატუსი</th></tr></thead>
             <tbody>${state.tasks.map((t) => {
               const [label, chip] = STATUS[taskStatus(t, today)];
-              return `<tr><td>${esc(t.name)}</td><td>${esc(contractorName(t.contractor_id)) || '-'}</td>
+              return `<tr><td>${esc(pick(t, 'name'))}</td><td>${esc(contractorName(t.contractor_id)) || '-'}</td>
                 <td class="small" style="white-space:nowrap">${fmtDate(t.start_date)} - ${fmtDate(t.end_date)}</td>
                 <td class="num">${t.progress}%</td><td><span class="chip ${chip}">${label}</span></td></tr>`;
             }).join('')}</tbody>
@@ -87,7 +87,7 @@ export async function renderReport(el) {
           <div class="table-wrap"><table>
             <thead><tr><th>თარიღი</th><th class="num">მუშები</th><th>შესრულებული სამუშაო</th></tr></thead>
             <tbody>${state.logs.slice(0, 7).map((l) => `<tr><td class="small" style="white-space:nowrap">${fmtDate(l.log_date)}<br><span class="muted">${weekday(l.log_date)}</span></td>
-              <td class="num">${l.workers ?? '-'}</td><td style="white-space:pre-line">${esc(l.work_done) || '<span class="muted">-</span>'}</td></tr>`).join('')}</tbody>
+              <td class="num">${l.workers ?? '-'}</td><td style="white-space:pre-line">${esc(pick(l, 'work_done')) || '<span class="muted">-</span>'}</td></tr>`).join('')}</tbody>
           </table></div>` : '<p class="muted">ჩანაწერები ჯერ არ არის.</p>'}
       </section>
     </div>`;

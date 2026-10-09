@@ -209,7 +209,7 @@ const EN = {
   'თანამშრომელი': 'Staff',
   'ქვეკონტრაქტორი': 'Subcontractor',
   'ყველაფერი, მათ შორის მომხმარებლების მართვა': 'Everything, including managing people',
-  'ყველა პროექტი: ჟურნალი, გრაფიკი, კონტრაქტორები, ფინანსები': 'Every project: logs, timetable, contractors, money',
+  'ხედავს ყველა პროექტს; წერს მხოლოდ დღიურ ჟურნალს': 'Sees every project; writes daily logs only',
   'მხოლოდ მონიშნული პროექტების ჟურნალი და გრაფიკი, ფინანსების გარეშე': 'Logs and timetable of the ticked projects only, no money',
   'მომხმარებლის დამატება': 'Add person',
   'სახელი': 'Name',

@@ -1,6 +1,6 @@
 // CPMG Projects - signing in, moving between pages, the projects list.
 import { db, q, signOutHere } from './db.js';
-import { $, $$, esc, fmtDate, lari, todayISO, toast, openForm, numOrNull } from './ui.js';
+import { $, $$, esc, fmtDate, lari, todayISO, toast, openForm, numOrNull, pick, pair, texts } from './ui.js';
 import { state, isAdmin, isStaff, loadProject, progressOf } from './state.js';
 import { renderLogs } from './logs.js';
 import { renderTimetable } from './timetable.js';
@@ -76,7 +76,7 @@ async function onSession(session) {
     await signOutHere();
     return;
   }
-  $('#me-name').textContent = state.me.full_name;
+  $('#me-name').textContent = pick(state.me, 'full_name');
   $$('[data-admin]').forEach((el) => { el.hidden = !isAdmin(); });
   $('#login').classList.add('hidden');
   $('#app').classList.remove('hidden');
@@ -120,22 +120,22 @@ async function showProjects() {
   view.innerHTML = `
     <div class="page-head">
       <h1>${showArchived ? 'დასრულებული პროექტები' : 'პროექტები'}</h1>
-      ${isStaff() && !showArchived ? '<button class="btn btn-primary" data-new-project>+ ახალი პროექტი</button>' : ''}
+      ${isAdmin() && !showArchived ? '<button class="btn btn-primary" data-new-project>+ ახალი პროექტი</button>' : ''}
     </div>
     ${shown.length ? `<div class="grid-cards">${shown.map((p) => {
       const prog = progressOf(tasks.filter((t) => t.project_id === p.id), today);
       return `
         <a class="card project-card" href="#/p/${p.id}/log">
-          <h3>${esc(p.name)}</h3>
-          ${p.client ? `<span class="muted small">დამკვეთი: ${esc(p.client)}</span>` : ''}
-          ${p.address ? `<span class="muted small">${esc(p.address)}</span>` : ''}
+          <h3>${esc(pick(p, 'name'))}</h3>
+          ${pick(p, 'client') ? `<span class="muted small">დამკვეთი: ${esc(pick(p, 'client'))}</span>` : ''}
+          ${pick(p, 'address') ? `<span class="muted small">${esc(pick(p, 'address'))}</span>` : ''}
           <span class="muted small">${p.start_date ? `${fmtDate(p.start_date)} - ${fmtDate(p.end_date)}` : 'თარიღები არ არის მითითებული'}</span>
           ${prog.count ? `
             <div class="bar" title="შესრულებულია ${prog.actual}%"><span style="width:${prog.actual}%"></span></div>
             <span class="small">შესრულებულია <b>${prog.actual}%</b> <span class="muted">· გეგმით ${prog.planned}%</span></span>` : ''}
         </a>`;
     }).join('')}</div>`
-    : `<div class="empty">${showArchived ? 'დასრულებული პროექტები არ არის.' : isStaff() ? 'პროექტები ჯერ არ არის. დაამატეთ პირველი.' : 'თქვენთვის ჯერ არცერთი პროექტი არ არის გაზიარებული.'}</div>`}
+    : `<div class="empty">${showArchived ? 'დასრულებული პროექტები არ არის.' : isAdmin() ? 'პროექტები ჯერ არ არის. დაამატეთ პირველი.' : 'თქვენთვის ჯერ არცერთი პროექტი არ არის გაზიარებული.'}</div>`}
     ${archivedCount || showArchived ? `<p style="margin-top:1.2rem"><a href="#/" data-toggle-archived>${showArchived ? '← მიმდინარე პროექტები' : `დასრულებული პროექტები (${archivedCount})`}</a></p>` : ''}`;
 
   $('[data-new-project]', view)?.addEventListener('click', () => projectForm());
@@ -173,15 +173,15 @@ async function showProject(id, tab, extra) {
   view.innerHTML = `
     <div class="project-head">
       <div>
-        <h1>${esc(p.name)}</h1>
+        <h1>${esc(pick(p, 'name'))}</h1>
         <p class="muted small" style="margin:0.2rem 0 0">${[
-          p.client && `დამკვეთი: ${esc(p.client)}`,
-          p.address && esc(p.address),
+          pick(p, 'client') && `დამკვეთი: ${esc(pick(p, 'client'))}`,
+          pick(p, 'address') && esc(pick(p, 'address')),
           p.start_date && `${fmtDate(p.start_date)} - ${fmtDate(p.end_date)}`,
           isStaff() && p.contract_value && `ხელშეკრულება: ${lari(p.contract_value)}`,
         ].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
       </div>
-      ${isStaff() ? '<button class="btn btn-ghost btn-sm" data-edit-project>პროექტის რედაქტირება</button>' : ''}
+      ${isAdmin() ? '<button class="btn btn-ghost btn-sm" data-edit-project>პროექტის რედაქტირება</button>' : ''}
     </div>
     <nav class="tabs">${tabs.map(([key, label]) => `<a href="#/p/${p.id}/${key}" class="${key === current[0] ? 'active' : ''}">${label}</a>`).join('')}</nav>
     <div id="tab"></div>`;
@@ -200,9 +200,9 @@ function projectForm(p = null) {
   openForm({
     title: p ? 'პროექტის რედაქტირება' : 'ახალი პროექტი',
     body: `
-      <label>დასახელება<input name="name" required maxlength="160" value="${esc(p?.name)}"></label>
-      <label>დამკვეთი<input name="client" maxlength="160" value="${esc(p?.client)}"></label>
-      <label>მისამართი<input name="address" maxlength="200" value="${esc(p?.address)}"></label>
+      ${pair('დასახელება', 'name', p, { required: true, maxlength: 160 })}
+      ${pair('დამკვეთი', 'client', p, { maxlength: 160 })}
+      ${pair('მისამართი', 'address', p, { maxlength: 200 })}
       <div class="row">
         <label>დაწყება<input name="start_date" type="date" value="${esc(p?.start_date)}"></label>
         <label>დასრულება<input name="end_date" type="date" value="${esc(p?.end_date)}"></label>
@@ -211,9 +211,9 @@ function projectForm(p = null) {
       ${p ? `<label class="check"><input type="checkbox" name="archived" ${p.archived ? 'checked' : ''}> პროექტი დასრულებულია</label>` : ''}`,
     onSubmit: async (form, data) => {
       const row = {
-        name: data.get('name').trim(),
-        client: data.get('client').trim() || null,
-        address: data.get('address').trim() || null,
+        ...texts(data, 'name'),
+        ...texts(data, 'client'),
+        ...texts(data, 'address'),
         start_date: data.get('start_date') || null,
         end_date: data.get('end_date') || null,
         contract_value: numOrNull(data.get('contract_value')),

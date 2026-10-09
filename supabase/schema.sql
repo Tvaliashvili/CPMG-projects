@@ -5,7 +5,7 @@
 --
 -- Who sees what (enforced here, not only on screen):
 --   admin          everything, and adds or removes people
---   staff          every project: daily logs, timetable, contractors, money
+--   staff          every project, all of it to read; they write daily logs only
 --   subcontractor  only the projects they are added to: daily logs and
 --                  timetable, read-only - never contractors' contracts or money
 -- =============================================================
@@ -193,10 +193,10 @@ create policy people_insert on public.people for insert to authenticated with ch
 create policy people_update on public.people for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy people_delete on public.people for delete to authenticated using (public.is_admin() and user_id <> auth.uid());
 
--- Projects: staff make and change them, admins delete them.
+-- Projects: only administrators make, change and delete them.
 create policy projects_read   on public.projects for select to authenticated using (public.can_see_project(id));
-create policy projects_insert on public.projects for insert to authenticated with check (public.is_staff());
-create policy projects_update on public.projects for update to authenticated using (public.is_staff()) with check (public.is_staff());
+create policy projects_insert on public.projects for insert to authenticated with check (public.is_admin());
+create policy projects_update on public.projects for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy projects_delete on public.projects for delete to authenticated using (public.is_admin());
 
 create policy project_people_read  on public.project_people for select to authenticated using (public.is_staff() or user_id = auth.uid());
@@ -204,17 +204,20 @@ create policy project_people_write on public.project_people for all to authentic
 
 -- Contractors: names and phones for anyone signed in (a subcontractor sees who does a timetable item).
 create policy contractors_read   on public.contractors for select to authenticated using (public.my_role() is not null);
-create policy contractors_insert on public.contractors for insert to authenticated with check (public.is_staff());
-create policy contractors_update on public.contractors for update to authenticated using (public.is_staff()) with check (public.is_staff());
+create policy contractors_insert on public.contractors for insert to authenticated with check (public.is_admin());
+create policy contractors_update on public.contractors for update to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy contractors_delete on public.contractors for delete to authenticated using (public.is_admin());
 
--- Contracts and money: staff only, reading included.
-create policy project_contractors_all on public.project_contractors for all to authenticated using (public.is_staff()) with check (public.is_staff());
-create policy money_all on public.money for all to authenticated using (public.is_staff()) with check (public.is_staff());
+-- Contracts and money: staff read them, administrators change them; subcontractors never see them.
+create policy project_contractors_read  on public.project_contractors for select to authenticated using (public.is_staff());
+create policy project_contractors_write on public.project_contractors for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy money_read  on public.money for select to authenticated using (public.is_staff());
+create policy money_write on public.money for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
--- Timetable, logs and photos: read on the projects you can see; staff write.
+-- Timetable: read on the projects you can see; administrators change it.
+-- Daily logs and their photos: staff write them (the one thing staff change).
 create policy tasks_read  on public.tasks for select to authenticated using (public.can_see_project(project_id));
-create policy tasks_write on public.tasks for all to authenticated using (public.is_staff()) with check (public.is_staff());
+create policy tasks_write on public.tasks for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy logs_read   on public.daily_logs for select to authenticated using (public.can_see_project(project_id));
 create policy logs_write  on public.daily_logs for all to authenticated using (public.is_staff()) with check (public.is_staff());
 create policy photos_read  on public.log_photos for select to authenticated using (public.can_see_project(project_id));
@@ -241,7 +244,7 @@ create policy cpmg_photos_delete on storage.objects for delete to authenticated
 -- =============================================================
 -- Documents: drawings, specifications, permits and other files on a project.
 -- Everyone on the project sees them, subcontractors included - except files
--- marked staff only. Staff upload, rename and delete.
+-- marked staff only. Administrators upload, rename and delete.
 -- =============================================================
 create table if not exists public.documents (
   id            uuid primary key default gen_random_uuid(),
@@ -281,7 +284,7 @@ drop policy if exists documents_write on public.documents;
 create policy documents_read on public.documents for select to authenticated
   using (public.can_see_project(project_id) and (not staff_only or public.is_staff()));
 create policy documents_write on public.documents for all to authenticated
-  using (public.is_staff()) with check (public.is_staff());
+  using (public.is_admin()) with check (public.is_admin());
 
 -- A file can be opened by whoever can see its row.
 create or replace function public.can_see_document(file_path text) returns boolean
@@ -310,6 +313,49 @@ drop policy if exists cpmg_documents_delete on storage.objects;
 create policy cpmg_documents_read on storage.objects for select to authenticated
   using (bucket_id = 'documents' and public.can_see_document(name));
 create policy cpmg_documents_insert on storage.objects for insert to authenticated
-  with check (bucket_id = 'documents' and public.is_staff());
+  with check (bucket_id = 'documents' and public.is_admin());
 create policy cpmg_documents_delete on storage.objects for delete to authenticated
-  using (bucket_id = 'documents' and public.is_staff());
+  using (bucket_id = 'documents' and public.is_admin());
+
+-- =============================================================
+-- English: every text people type has an English twin (<name>_en), filled in by hand.
+-- The EN switch shows the English one, or the Georgian when it is empty.
+-- =============================================================
+alter table public.people              add column if not exists full_name_en text, add column if not exists company_en text;
+alter table public.projects            add column if not exists name_en text, add column if not exists client_en text, add column if not exists address_en text;
+alter table public.contractors         add column if not exists name_en text, add column if not exists trade_en text, add column if not exists contact_person_en text;
+alter table public.project_contractors add column if not exists scope_en text;
+alter table public.tasks               add column if not exists name_en text, add column if not exists notes_en text;
+alter table public.daily_logs          add column if not exists work_done_en text, add column if not exists notes_en text, add column if not exists author_name_en text;
+alter table public.money               add column if not exists description_en text;
+alter table public.documents           add column if not exists name_en text, add column if not exists uploader_name_en text;
+
+-- Who wrote a log, in both languages.
+create or replace function public.sign_log() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.author_id := auth.uid();
+    select full_name, full_name_en into new.author_name, new.author_name_en from public.people where user_id = auth.uid();
+  else
+    new.author_id := old.author_id;
+    new.author_name := old.author_name;
+    new.author_name_en := old.author_name_en;
+  end if;
+  return new;
+end $$;
+
+create or replace function public.sign_document() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.uploaded_by := auth.uid();
+    select full_name, full_name_en into new.uploader_name, new.uploader_name_en from public.people where user_id = auth.uid();
+  else
+    new.uploaded_by := old.uploaded_by;
+    new.uploader_name := old.uploader_name;
+    new.uploader_name_en := old.uploader_name_en;
+    new.path := old.path;
+  end if;
+  return new;
+end $$;

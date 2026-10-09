@@ -1,11 +1,40 @@
 // Small shared helpers: finding elements, formatting, pop-up forms, messages.
-import { tr } from './i18n.js';
+import { tr, lang } from './i18n.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 /** Text made safe to put inside HTML. */
 export const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- Texts people type, in two languages: <key> (Georgian) and <key>_en ----------
+/** The text in the interface's language, else the other one, so nothing shows empty. */
+export const pick = (row, key) => (lang === 'en'
+  ? row?.[`${key}_en`] || row?.[key]
+  : row?.[key] || row?.[`${key}_en`]) ?? '';
+
+/**
+ * One text, asked for in both languages: a Georgian box (required when `required`)
+ * and an English one beside it - or under it, for longer text.
+ */
+export function pair(label, key, row, { required = false, textarea = false, rows = 3, maxlength = 300, placeholder = '' } = {}) {
+  const box = (name, value, extra) => (textarea
+    ? `<textarea name="${name}" rows="${rows}" ${extra}>${esc(value)}</textarea>`
+    : `<input name="${name}" maxlength="${maxlength}" value="${esc(value)}" ${extra}>`);
+  return `
+    <div class="pair${textarea ? ' pair-long' : ''}">
+      <span class="pair-label">${esc(label)}</span>
+      <div class="pair-boxes">
+        <label><span class="pair-lang" data-no-t>ქართულად</span>${box(key, row?.[key], `${required ? 'required' : ''} placeholder="${esc(placeholder)}"`)}</label>
+        <label><span class="pair-lang" data-no-t>English</span>${box(`${key}_en`, row?.[`${key}_en`], 'lang="en"')}</label>
+      </div>
+    </div>`;
+}
+
+/** A form's text, trimmed, or null when empty. */
+export const text = (data, name) => (data.get(name) ?? '').trim() || null;
+/** Both languages of one text from a form: { key, key_en }. */
+export const texts = (data, key) => ({ [key]: text(data, key), [`${key}_en`]: text(data, `${key}_en`) });
 
 export const lari = (n) => `${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₾`;
 

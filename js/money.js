@@ -1,8 +1,8 @@
 // Money: what came in, what went out, and the balance month by month.
 import { db, q } from './db.js';
-import { $, $$, esc, lari, fmtDate, monthName, todayISO, toast, openForm, options, numOrNull, MONTHS_SHORT } from './ui.js';
+import { $, $$, esc, lari, fmtDate, monthName, todayISO, toast, openForm, options, numOrNull, MONTHS_SHORT, pick, pair, texts } from './ui.js';
 import { tr } from './i18n.js';
-import { state, reloadMoney, contractorName, CATEGORIES, IN_CATEGORIES, OUT_CATEGORIES, moneyTotals, moneyByMonth } from './state.js';
+import { state, isAdmin, reloadMoney, contractorName, CATEGORIES, IN_CATEGORIES, OUT_CATEGORIES, moneyTotals, moneyByMonth } from './state.js';
 
 let filter = 'all';
 let chart = null;
@@ -17,7 +17,7 @@ export async function renderMoney(el) {
   el.innerHTML = `
     <div class="page-head">
       <h2>ფინანსები</h2>
-      <button class="btn btn-primary" data-add>+ ჩანაწერის დამატება</button>
+      ${isAdmin() ? '<button class="btn btn-primary" data-add>+ ჩანაწერის დამატება</button>' : ''}
     </div>
     <div class="stats">
       <div class="stat"><b class="good">${lari(t.incoming)}</b><span>შემოსავალი</span></div>
@@ -44,18 +44,18 @@ export async function renderMoney(el) {
         <table>
           <thead><tr><th>თარიღი</th><th>სახე</th><th class="hide-phone">აღწერა</th><th class="num">თანხა</th></tr></thead>
           <tbody>${entries.map((m) => `
-            <tr class="click" data-entry="${m.id}">
+            <tr ${isAdmin() ? `class="click" data-entry="${m.id}"` : ''}>
               <td class="small" style="white-space:nowrap">${fmtDate(m.entry_date)}</td>
               <td><span class="chip ${m.direction === 'in' ? 'chip-in' : 'chip-out'}">${esc(CATEGORIES[m.category])}</span>
                 ${m.contractor_id ? `<br><span class="small">${esc(contractorName(m.contractor_id))}</span>` : ''}
-                ${m.description ? `<span class="muted small show-phone">${esc(m.description)}</span>` : ''}</td>
-              <td class="hide-phone small">${esc(m.description) || '<span class="muted">-</span>'}</td>
+                ${pick(m, 'description') ? `<span class="muted small show-phone">${esc(pick(m, 'description'))}</span>` : ''}</td>
+              <td class="hide-phone small">${esc(pick(m, 'description')) || '<span class="muted">-</span>'}</td>
               <td class="num ${m.direction === 'in' ? 'good' : 'bad'}">${m.direction === 'in' ? '+' : '−'}${lari(m.amount)}</td>
             </tr>`).join('')}</tbody>
         </table>
       </div>` : '<div class="empty">ჩანაწერები ჯერ არ არის.</div>'}`;
 
-  $('[data-add]', el).addEventListener('click', () => moneyForm(null, el));
+  $('[data-add]', el)?.addEventListener('click', () => moneyForm(null, el));
   $$('[data-filter]', el).forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; renderMoney(el); }));
   $$('[data-entry]', el).forEach((tr) => tr.addEventListener('click', () => moneyForm(state.money.find((m) => m.id === tr.dataset.entry), el)));
   drawChart($('canvas', el), months);
@@ -103,8 +103,8 @@ function moneyForm(m, el) {
         <label>თანხა (₾)<input name="amount" inputmode="decimal" required value="${esc(m?.amount)}"></label>
       </div>
       <label>სახე<select name="category"></select></label>
-      <label data-contractor-field>კონტრაქტორი<select name="contractor_id">${options([['', '-'], ...state.contractors.map((c) => [c.id, c.name])], m?.contractor_id)}</select></label>
-      <label>აღწერა<input name="description" maxlength="300" placeholder="მაგ. ავანსი, ინვოისი №…" value="${esc(m?.description)}"></label>`,
+      <label data-contractor-field>კონტრაქტორი<select name="contractor_id">${options([['', '-'], ...state.contractors.map((c) => [c.id, pick(c, 'name')])], m?.contractor_id)}</select></label>
+      ${pair('აღწერა', 'description', m, { maxlength: 300, placeholder: 'მაგ. ავანსი, ინვოისი №…' })}`,
     onOpen: (form) => {
       const sync = () => {
         const dir = form.direction.value;
@@ -132,7 +132,7 @@ function moneyForm(m, el) {
         amount,
         category,
         contractor_id: category === 'contractor' ? data.get('contractor_id') || null : null,
-        description: data.get('description').trim() || null,
+        ...texts(data, 'description'),
       };
       if (m) await q(db.from('money').update(row).eq('id', m.id));
       else await q(db.from('money').insert({ ...row, project_id: state.project.id }));

@@ -149,7 +149,15 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .filter { flex-wrap: wrap; }
 
 /* ---------- Pop-up forms ---------- */
-.dialog { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); padding: 0; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.4); }
+/* One text in two languages: Georgian and English boxes side by side (long text: one under the other) */
+.pair { display: grid; gap: 0.3rem; }
+.pair-label { font-size: 0.88rem; font-weight: 600; color: #334155; }
+.pair-boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.pair-long .pair-boxes { grid-template-columns: 1fr; }
+.pair-boxes label { gap: 0.15rem; font-weight: 400; }
+.pair-lang { font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+
+.dialog { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow-y: auto; padding: 0; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.4); }
 .dialog::backdrop { background: rgba(15, 23, 42, 0.45); }
 .dialog form { display: grid; gap: 0.9rem; padding: 1.4rem; }
 .dialog .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
@@ -187,6 +195,7 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
   .brand img { height: 28px; }
   .view { padding: 1rem; }
   .dialog .row { grid-template-columns: 1fr; }
+  .pair-boxes { grid-template-columns: 1fr; }
   .page-head .btn { flex: 1 1 100%; }
   th, td { padding: 0.5rem 0.6rem; }
   .hide-phone { display: none; }

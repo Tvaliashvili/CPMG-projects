@@ -1,8 +1,8 @@
 // Documents: drawings, specifications, permits and other files, for everyone on the project.
 // Files marked staff only are hidden from subcontractors (by the database, not only here).
 import { db, q } from './db.js';
-import { $, $$, esc, fmtDate, toast, openForm, options } from './ui.js';
-import { state, isStaff, reloadDocuments } from './state.js';
+import { $, $$, esc, fmtDate, toast, openForm, options, pick, pair, texts } from './ui.js';
+import { state, isStaff, isAdmin, reloadDocuments } from './state.js';
 
 export const DOC_CATEGORIES = {
   drawings: 'ნახაზები',
@@ -32,7 +32,7 @@ export async function renderDocuments(el) {
   el.innerHTML = `
     <div class="page-head">
       <h2>დოკუმენტები <span class="muted small">(${docs.length})</span></h2>
-      ${isStaff() ? '<button class="btn btn-primary" data-upload>+ ფაილის ატვირთვა</button>' : ''}
+      ${isAdmin() ? '<button class="btn btn-primary" data-upload>+ ფაილის ატვირთვა</button>' : ''}
     </div>
     ${isStaff() ? '<div class="usage" data-usage></div>' : ''}
     <div class="filter" style="margin-bottom:1rem;flex-wrap:wrap">
@@ -45,13 +45,13 @@ export async function renderDocuments(el) {
           <thead><tr><th>ფაილი</th><th class="hide-phone">განყოფილება</th><th class="num hide-phone">ზომა</th><th class="hide-phone">ატვირთა</th><th></th></tr></thead>
           <tbody>${shown.map((d) => `
             <tr>
-              <td><a href="#" data-open="${d.id}"><b>${esc(d.name)}</b></a>
+              <td><a href="#" data-open="${d.id}"><b>${esc(pick(d, 'name'))}</b></a>
                 ${d.staff_only ? ' <span class="chip chip-late">მხოლოდ თანამშრომლებისთვის</span>' : ''}
                 <span class="muted small show-phone"><span>${esc(DOC_CATEGORIES[d.category])}</span> · ${fileSize(d.size_bytes)} · ${fmtDate(d.created_at.slice(0, 10))}</span></td>
               <td class="hide-phone">${esc(DOC_CATEGORIES[d.category])}</td>
               <td class="num hide-phone small">${fileSize(d.size_bytes)}</td>
-              <td class="hide-phone small">${esc(d.uploader_name ?? '')}<br><span class="muted">${fmtDate(d.created_at.slice(0, 10))}</span></td>
-              <td class="num">${isStaff() ? `<button class="btn btn-ghost btn-sm" data-edit="${d.id}">რედაქტირება</button>` : ''}</td>
+              <td class="hide-phone small">${esc(pick(d, 'uploader_name'))}<br><span class="muted">${fmtDate(d.created_at.slice(0, 10))}</span></td>
+              <td class="num">${isAdmin() ? `<button class="btn btn-ghost btn-sm" data-edit="${d.id}">რედაქტირება</button>` : ''}</td>
             </tr>`).join('')}</tbody>
         </table>
       </div>` : `<div class="empty">${docs.length ? 'ამ განყოფილებაში ფაილები არ არის.' : 'დოკუმენტები ჯერ არ არის.'}</div>`}`;
@@ -76,7 +76,7 @@ async function openDocument(d) {
   // A window opened now, before waiting for the link, is not blocked as a pop-up.
   const win = window.open('', '_blank');
   const { data, error } = await db.storage.from('documents')
-    .createSignedUrl(d.path, 3600, opensInBrowser(d.mime) ? undefined : { download: d.name });
+    .createSignedUrl(d.path, 3600, opensInBrowser(d.mime) ? undefined : { download: pick(d, 'name') });
   if (error || !data?.signedUrl) {
     win?.close();
     toast('ფაილი ვერ გაიხსნა.', true);
@@ -134,12 +134,12 @@ function editForm(d, el) {
   openForm({
     title: 'ფაილის რედაქტირება',
     body: `
-      <label>დასახელება<input name="name" required maxlength="200" value="${esc(d.name)}"></label>
+      ${pair('დასახელება', 'name', d, { required: true, maxlength: 200 })}
       <label>განყოფილება<select name="category">${options(Object.entries(DOC_CATEGORIES), d.category)}</select></label>
       <label class="check"><input type="checkbox" name="staff_only" ${d.staff_only ? 'checked' : ''}> მხოლოდ თანამშრომლებისთვის (ქვეკონტრაქტორები ვერ ნახავენ)</label>`,
     onSubmit: async (form, data) => {
       await q(db.from('documents').update({
-        name: data.get('name').trim(), category: data.get('category'), staff_only: data.get('staff_only') === 'on',
+        ...texts(data, 'name'), category: data.get('category'), staff_only: data.get('staff_only') === 'on',
       }).eq('id', d.id));
       await reloadDocuments();
       toast('შენახულია');
