@@ -4,12 +4,18 @@ import { $, $$, esc, fmtDate, lari, todayISO, toast, openForm, numOrNull } from 
 import { state, isAdmin, isStaff, loadProject, progressOf } from './state.js';
 import { renderLogs } from './logs.js';
 import { renderTimetable } from './timetable.js';
+import { renderDocuments } from './documents.js';
 import { renderContractors } from './contractors.js';
 import { renderMoney } from './money.js';
 import { renderReport } from './report.js';
 import { renderPeople } from './people.js';
 
 const view = $('#view');
+
+// Installable on a phone ("Add to Home screen"); the site works the same without it.
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* not essential */ });
+}
 
 // =============================================================
 // Signing in
@@ -133,6 +139,7 @@ async function showProjects() {
 const TABS = [
   ['log', 'დღიური ჟურნალი', renderLogs, false],
   ['plan', 'გრაფიკი', renderTimetable, false],
+  ['docs', 'დოკუმენტები', renderDocuments, false],
   ['contractors', 'კონტრაქტორები', renderContractors, true],
   ['money', 'ფინანსები', renderMoney, true],
   ['report', 'ანგარიში', renderReport, true],

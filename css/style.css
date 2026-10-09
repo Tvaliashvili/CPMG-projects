@@ -138,6 +138,10 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .filter button { padding: 0.35rem 0.8rem; border: 0; background: none; font: inherit; font-size: 0.85rem; cursor: pointer; color: var(--muted); }
 .filter button.active { background: var(--navy); color: #fff; }
 
+/* ---------- Documents ---------- */
+.usage { display: grid; gap: 0.3rem; margin-bottom: 1rem; }
+.filter { flex-wrap: wrap; }
+
 /* ---------- Pop-up forms ---------- */
 .dialog { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); padding: 0; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.4); }
 .dialog::backdrop { background: rgba(15, 23, 42, 0.45); }

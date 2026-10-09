@@ -237,3 +237,79 @@ create policy cpmg_photos_insert on storage.objects for insert to authenticated
   with check (bucket_id = 'photos' and public.is_staff());
 create policy cpmg_photos_delete on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and public.is_staff());
+
+-- =============================================================
+-- Documents: drawings, specifications, permits and other files on a project.
+-- Everyone on the project sees them, subcontractors included - except files
+-- marked staff only. Staff upload, rename and delete.
+-- =============================================================
+create table if not exists public.documents (
+  id            uuid primary key default gen_random_uuid(),
+  project_id    uuid not null references public.projects(id) on delete cascade,
+  name          text not null,
+  category      text not null default 'other' check (category in ('drawings', 'specs', 'permits', 'other')),
+  staff_only    boolean not null default false,
+  path          text not null unique,     -- in the "documents" bucket: <project>/<id>.<ext>
+  size_bytes    bigint,
+  mime          text,
+  uploaded_by   uuid references public.people(user_id) on delete set null,
+  uploader_name text,
+  created_at    timestamptz not null default now()
+);
+create index if not exists documents_project on public.documents (project_id, category);
+
+create or replace function public.sign_document() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.uploaded_by := auth.uid();
+    new.uploader_name := (select full_name from public.people where user_id = auth.uid());
+  else
+    new.uploaded_by := old.uploaded_by;
+    new.uploader_name := old.uploader_name;
+    new.path := old.path;
+  end if;
+  return new;
+end $$;
+drop trigger if exists documents_sign on public.documents;
+create trigger documents_sign before insert or update on public.documents
+  for each row execute function public.sign_document();
+
+alter table public.documents enable row level security;
+drop policy if exists documents_read on public.documents;
+drop policy if exists documents_write on public.documents;
+create policy documents_read on public.documents for select to authenticated
+  using (public.can_see_project(project_id) and (not staff_only or public.is_staff()));
+create policy documents_write on public.documents for all to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+-- A file can be opened by whoever can see its row.
+create or replace function public.can_see_document(file_path text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.documents d
+    where d.path = file_path and public.can_see_project(d.project_id) and (not d.staff_only or public.is_staff())
+  )
+$$;
+
+-- How much of the storage is used, in bytes (photos and documents). Staff only.
+create or replace function public.storage_used() returns bigint
+language sql stable security definer set search_path = public as $$
+  select case when public.is_staff()
+    then coalesce((select sum((metadata->>'size')::bigint) from storage.objects), 0) else null end
+$$;
+
+-- 50 MB a file: the most Supabase's free plan takes.
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('documents', 'documents', false, 52428800)
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit;
+
+drop policy if exists cpmg_documents_read on storage.objects;
+drop policy if exists cpmg_documents_insert on storage.objects;
+drop policy if exists cpmg_documents_delete on storage.objects;
+create policy cpmg_documents_read on storage.objects for select to authenticated
+  using (bucket_id = 'documents' and public.can_see_document(name));
+create policy cpmg_documents_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'documents' and public.is_staff());
+create policy cpmg_documents_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'documents' and public.is_staff());

@@ -10,6 +10,7 @@ export const state = {
   projectContractors: [], // contracts on the open project (staff only)
   money: [],              // (staff only)
   logs: [],               // newest first, each with its log_photos
+  documents: [],          // newest first; staff-only ones reach staff only
 };
 
 export const isAdmin = () => state.me?.role === 'admin';
@@ -20,15 +21,16 @@ export const ROLE_NAMES = { admin: 'ადმინისტრატორი',
 /** Everything the open project's tabs show, fetched together. */
 export async function loadProject(id) {
   const staff = isStaff();
-  const [project, tasks, contractors, logs, contracts, money] = await Promise.all([
+  const [project, tasks, contractors, logs, documents, contracts, money] = await Promise.all([
     q(db.from('projects').select('*').eq('id', id).maybeSingle()),
     q(db.from('tasks').select('*').eq('project_id', id).order('start_date').order('name')),
     q(db.from('contractors').select('*').order('name')),
     q(db.from('daily_logs').select('*, log_photos(id, path)').eq('project_id', id).order('log_date', { ascending: false })),
+    q(db.from('documents').select('*').eq('project_id', id).order('created_at', { ascending: false })),
     staff ? q(db.from('project_contractors').select('*').eq('project_id', id)) : [],
     staff ? q(db.from('money').select('*').eq('project_id', id).order('entry_date').order('created_at')) : [],
   ]);
-  Object.assign(state, { project, tasks, contractors, logs, projectContractors: contracts, money });
+  Object.assign(state, { project, tasks, contractors, logs, documents, projectContractors: contracts, money });
   return project;
 }
 
@@ -37,6 +39,9 @@ export async function reloadTasks() {
 }
 export async function reloadLogs() {
   state.logs = await q(db.from('daily_logs').select('*, log_photos(id, path)').eq('project_id', state.project.id).order('log_date', { ascending: false }));
+}
+export async function reloadDocuments() {
+  state.documents = await q(db.from('documents').select('*').eq('project_id', state.project.id).order('created_at', { ascending: false }));
 }
 export async function reloadContractors() {
   const [contractors, contracts] = await Promise.all([
