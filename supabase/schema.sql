@@ -373,3 +373,69 @@ language sql security definer set search_path = public as $$
 $$;
 revoke all on function public.password_changed() from public, anon;
 grant execute on function public.password_changed() to authenticated;
+
+-- =============================================================
+-- Chat: one conversation per project, text only. Everyone who can open the
+-- project reads and writes it; people delete their own messages, admins any.
+-- New messages reach open screens at once (Supabase Realtime).
+-- =============================================================
+create table if not exists public.chat_messages (
+  id             uuid primary key default gen_random_uuid(),
+  project_id     uuid not null references public.projects(id) on delete cascade,
+  user_id        uuid references public.people(user_id) on delete set null,
+  author_name    text,
+  author_name_en text,
+  body           text not null check (length(body) between 1 and 2000),
+  created_at     timestamptz not null default now()
+);
+create index if not exists chat_project on public.chat_messages (project_id, created_at);
+
+-- The writer is whoever is signed in - never what the browser says.
+create or replace function public.sign_chat() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.user_id := auth.uid();
+  new.created_at := now();
+  select full_name, full_name_en into new.author_name, new.author_name_en from public.people where user_id = auth.uid();
+  return new;
+end $$;
+drop trigger if exists chat_sign on public.chat_messages;
+create trigger chat_sign before insert on public.chat_messages
+  for each row execute function public.sign_chat();
+
+alter table public.chat_messages enable row level security;
+drop policy if exists chat_read on public.chat_messages;
+drop policy if exists chat_write on public.chat_messages;
+drop policy if exists chat_delete on public.chat_messages;
+create policy chat_read   on public.chat_messages for select to authenticated using (public.can_see_project(project_id));
+create policy chat_write  on public.chat_messages for insert to authenticated with check (public.can_see_project(project_id));
+create policy chat_delete on public.chat_messages for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'chat_messages') then
+    alter publication supabase_realtime add table public.chat_messages;
+  end if;
+end $$;
+
+-- A deleted chat message stays in place as "message deleted": its text is erased,
+-- and who deleted it is kept (the writer, or an administrator).
+alter table public.chat_messages add column if not exists deleted_at timestamptz;
+alter table public.chat_messages add column if not exists deleted_by uuid;
+alter table public.chat_messages alter column body drop not null;
+alter table public.chat_messages drop constraint if exists chat_messages_body_check;
+alter table public.chat_messages add constraint chat_messages_body_check
+  check (deleted_at is not null or length(body) between 1 and 2000);
+drop policy if exists chat_delete on public.chat_messages; -- deleting goes through delete_message
+
+create or replace function public.delete_message(message_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.chat_messages
+     set body = null, deleted_at = now(), deleted_by = auth.uid()
+   where id = message_id and deleted_at is null
+     and (user_id = auth.uid() or public.is_admin());
+  if not found then raise exception 'not allowed'; end if;
+end $$;
+revoke all on function public.delete_message(uuid) from public, anon;
+grant execute on function public.delete_message(uuid) to authenticated;

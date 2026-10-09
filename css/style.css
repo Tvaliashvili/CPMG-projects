@@ -148,6 +148,24 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .usage { display: grid; gap: 0.3rem; margin-bottom: 1rem; }
 .filter { flex-wrap: wrap; }
 
+/* ---------- Chat ---------- */
+.chat { display: grid; gap: 0.6rem; padding: 0.8rem; }
+.chat-log { display: flex; flex-direction: column; gap: 0.5rem; height: max(18rem, calc(100vh - 25rem)); overflow-y: auto; padding: 0.3rem; }
+.chat-day { align-self: center; margin: 0.4rem 0; padding: 0.1rem 0.7rem; border-radius: 99px; background: #eef2f7; font-size: 0.75rem; color: var(--muted); }
+.chat-msg { align-self: flex-start; max-width: min(36rem, 85%); padding: 0.45rem 0.75rem; border-radius: 12px 12px 12px 4px; background: #f1f4f8; }
+.chat-msg.mine { align-self: flex-end; border-radius: 12px 12px 4px 12px; background: #e3ebf7; }
+.chat-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--muted); }
+.chat-meta b { color: var(--navy); font-weight: 600; }
+.chat-body { white-space: pre-line; overflow-wrap: anywhere; }
+.chat-deleted { font-style: italic; color: var(--muted); font-size: 0.88rem; }
+.chat-del { margin-left: auto; padding: 0 0.3rem; border: 0; background: none; font-size: 1rem; line-height: 1; color: var(--muted); cursor: pointer; opacity: 0.5; }
+.chat-del:hover { opacity: 1; color: var(--red); }
+.chat-empty { margin: auto; }
+.chat-form { display: flex; gap: 0.5rem; align-items: flex-end; }
+.chat-form textarea { min-height: 2.8rem; resize: none; }
+.chat-hint { margin: 0; }
+@media (max-width: 640px) { .chat-hint { display: none; } .chat-log { height: calc(100vh - 21rem); } }
+
 /* ---------- Pop-up forms ---------- */
 /* One text in two languages: Georgian and English boxes side by side (long text: one under the other) */
 .pair { display: grid; gap: 0.3rem; }

@@ -6,6 +6,7 @@ import { renderLogs } from './logs.js';
 import { renderTimetable } from './timetable.js';
 import { renderDocuments } from './documents.js';
 import { renderDayReport } from './dayreport.js';
+import { renderChat, stopChat } from './chat.js';
 import { renderContractors } from './contractors.js';
 import { renderMoney } from './money.js';
 import { renderReport } from './report.js';
@@ -128,6 +129,7 @@ export async function route() {
   const [page, id, tab, extra] = location.hash.replace(/^#\/?/, '').split('/');
   $$('.topnav a').forEach((a) => a.classList.toggle('active', a.dataset.top === (page === 'people' ? 'people' : 'projects')));
   window.scrollTo(0, 0);
+  stopChat(); // the chat listens only while it is open
   try {
     if (page === 'p' && id) await showProject(id, tab || 'log', extra);
     else if (page === 'people' && isAdmin()) await renderPeople(view);
@@ -189,6 +191,7 @@ const TABS = [
   ['log', 'დღიური ჟურნალი', renderLogs, false],
   ['plan', 'გრაფიკი', renderTimetable, false],
   ['docs', 'დოკუმენტები', renderDocuments, false],
+  ['chat', 'ჩატი', renderChat, false],
   ['contractors', 'კონტრაქტორები', renderContractors, true],
   ['money', 'ფინანსები', renderMoney, true],
   ['report', 'ანგარიში', renderReport, true],
