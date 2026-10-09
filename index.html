@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CPMG Projects</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="img/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Signing in: accounts are made by an administrator -->
+  <main id="login" class="login hidden">
+    <form id="login-form" class="login-card">
+      <div class="brand brand-lg"><img src="img/icon.svg" alt="" /><span>CPMG Projects</span></div>
+      <label>ელფოსტა<input name="email" type="email" autocomplete="email" required /></label>
+      <label>პაროლი<input name="password" type="password" autocomplete="current-password" required /></label>
+      <p class="form-error" hidden></p>
+      <button class="btn btn-primary" type="submit">შესვლა</button>
+      <p class="muted small">პაროლი დაგავიწყდათ? მიმართეთ ადმინისტრატორს.</p>
+    </form>
+  </main>
+
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <a class="brand" href="#/"><img src="img/icon.svg" alt="" /><span>CPMG Projects</span></a>
+      <nav class="topnav">
+        <a href="#/" data-top="projects">პროექტები</a>
+        <a href="#/people" data-top="people" data-admin hidden>მომხმარებლები</a>
+      </nav>
+      <div class="me">
+        <a href="#/account" id="me-name" class="me-name"></a>
+        <button type="button" id="sign-out" class="btn btn-ghost btn-sm">გასვლა</button>
+      </div>
+    </header>
+    <main id="view" class="view"></main>
+  </div>
+
+  <dialog id="form-dialog" class="dialog"></dialog>
+  <dialog id="photo-dialog" class="dialog photo-dialog"><img alt="" /><button type="button" class="btn btn-ghost" data-close>დახურვა</button></dialog>
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
