@@ -36,6 +36,7 @@ function logCard(l) {
         <div class="log-meta">
           ${l.weather ? `<span class="chip">${esc(l.weather)}</span>` : ''}
           ${l.workers != null ? `<span class="chip">მუშები: ${l.workers}</span>` : ''}
+          <a class="btn btn-ghost btn-sm" href="#/p/${state.project.id}/day/${l.id}">ანგარიში</a>
           ${isStaff() ? `<button class="btn btn-ghost btn-sm" data-edit-log="${l.id}">რედაქტირება</button>` : ''}
         </div>
       </div>

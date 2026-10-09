@@ -90,7 +90,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #9db7dd; outline-
 .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem; }
 .stat b { display: block; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
 .stat span { color: var(--muted); font-size: 0.85rem; }
-.chip { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 99px; font-size: 0.78rem; font-weight: 600; background: #eef2f7; color: #475569; white-space: nowrap; }
+.chip { display: inline-flex; align-items: center; line-height: 1.4; padding: 0.15rem 0.6rem; border-radius: 99px; font-size: 0.78rem; font-weight: 600; background: #eef2f7; color: #475569; white-space: nowrap; }
 .chip-done { background: var(--green-bg); color: var(--green); }
 .chip-late { background: var(--red-bg); color: var(--red); }
 .chip-now { background: #e6eefa; color: var(--navy-2); }
@@ -116,7 +116,7 @@ tfoot td { font-weight: 700; background: #f8fafc; }
 /* ---------- Daily logs ---------- */
 .log { display: grid; gap: 0.6rem; }
 .log-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.log-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.log-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .log p { margin: 0; white-space: pre-line; }
 .log-label { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
 .photos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -170,6 +170,9 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .report { display: grid; gap: 1.2rem; }
 .report section { break-inside: avoid; }
 .report h2 { margin-bottom: 0.6rem; }
+.report-logo { display: block; height: 40px; width: auto; }
+.day-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.6rem; }
+.day-photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: #e6ebf2; break-inside: avoid; }
 .report-head { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 0.8rem; border-bottom: 3px solid var(--navy); }
 
 /* ---------- Phones ---------- */
@@ -191,5 +194,6 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
   .view { max-width: none; padding: 0; }
   .card, .stat, .table-wrap { border-color: #cbd5e1; }
   th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .day-photos { grid-template-columns: repeat(2, 1fr); } /* two a row on paper */
   .bar, .bar > span, .chip, .gantt-bar, .gantt-bar > span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

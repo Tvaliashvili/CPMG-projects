@@ -25,7 +25,8 @@ export async function renderReport(el) {
     <div class="report">
       <div class="report-head">
         <div>
-          <h1>${esc(p.name)}</h1>
+          <img class="report-logo" src="img/logo-mark.png" alt="CPMG">
+          <h1 style="margin-top:0.6rem">${esc(p.name)}</h1>
           <p class="muted" style="margin:0.2rem 0 0">${[p.client && `დამკვეთი: ${esc(p.client)}`, p.address && esc(p.address)].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
         </div>
         <div style="text-align:right">

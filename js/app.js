@@ -5,6 +5,7 @@ import { state, isAdmin, isStaff, loadProject, progressOf } from './state.js';
 import { renderLogs } from './logs.js';
 import { renderTimetable } from './timetable.js';
 import { renderDocuments } from './documents.js';
+import { renderDayReport } from './dayreport.js';
 import { renderContractors } from './contractors.js';
 import { renderMoney } from './money.js';
 import { renderReport } from './report.js';
@@ -78,11 +79,11 @@ async function onSession(session) {
 window.addEventListener('hashchange', () => { if (state.me) route(); });
 
 export async function route() {
-  const [page, id, tab] = location.hash.replace(/^#\/?/, '').split('/');
+  const [page, id, tab, extra] = location.hash.replace(/^#\/?/, '').split('/');
   $$('.topnav a').forEach((a) => a.classList.toggle('active', a.dataset.top === (page === 'people' ? 'people' : 'projects')));
   window.scrollTo(0, 0);
   try {
-    if (page === 'p' && id) await showProject(id, tab || 'log');
+    if (page === 'p' && id) await showProject(id, tab || 'log', extra);
     else if (page === 'people' && isAdmin()) await renderPeople(view);
     else await showProjects();
   } catch (e) {
@@ -147,14 +148,16 @@ const TABS = [
   ['report', 'ანგარიში', renderReport, true],
 ];
 
-async function showProject(id, tab) {
+async function showProject(id, tab, extra) {
   if (state.project?.id !== id) {
     view.innerHTML = '<p class="muted">იტვირთება…</p>';
     const project = await loadProject(id);
     if (!project) throw new Error('პროექტი ვერ მოიძებნა, ან მისი ნახვის უფლება არ გაქვთ.');
   }
   const tabs = TABS.filter(([, , , staffOnly]) => !staffOnly || isStaff());
-  const current = tabs.find(([key]) => key === tab) ?? tabs[0];
+  // A day's report (#/p/<id>/day/<log>) sits under the daily log tab.
+  const day = tab === 'day' && extra;
+  const current = tabs.find(([key]) => key === (day ? 'log' : tab)) ?? tabs[0];
   const p = state.project;
 
   view.innerHTML = `
@@ -176,7 +179,8 @@ async function showProject(id, tab) {
   // On a phone the tabs scroll sideways: the open one is brought into sight.
   const active = $('.tabs a.active', view);
   active.parentElement.scrollLeft = active.offsetLeft - 16;
-  await current[2]($('#tab'));
+  if (day) await renderDayReport($('#tab'), extra);
+  else await current[2]($('#tab'));
 }
 
 /** Re-draws the open tab after a change. */

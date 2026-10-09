@@ -198,6 +198,10 @@ const EN = {
   'გრაფიკი ცარიელია.': 'The timetable is empty.',
   'ხელშეკრულების ღირებულება': 'Contract value',
   'ბოლო ჩანაწერები': 'Latest logs',
+  'დღიური ანგარიში': 'Daily report',
+  'ფოტოები': 'Photos',
+  'ჩანაწერი ვერ მოიძებნა.': 'Log not found.',
+  'ჟურნალზე დაბრუნება': 'Back to the log',
   'მუშები': 'Workers',
 
   // People
