@@ -2,6 +2,7 @@
 import { db, q, peopleCall } from './db.js';
 import { $, $$, esc, toast, openForm, options } from './ui.js';
 import { state, ROLE_NAMES } from './state.js';
+import { tr } from './i18n.js';
 
 const ROLE_HELP = {
   admin: 'ყველაფერი, მათ შორის მომხმარებლების მართვა',
@@ -126,7 +127,7 @@ function passwordForm(person) {
 
 /** The details to send the person, with a button that copies them. */
 function showCredentials(email, password) {
-  const text = `CPMG Projects\nმისამართი: ${siteAddress()}\nელფოსტა: ${email}\nპაროლი: ${password}`;
+  const text = `CPMG Projects\n${tr('მისამართი:')} ${siteAddress()}\n${tr('ელფოსტა:')} ${email}\n${tr('პაროლი:')} ${password}`;
   openForm({
     title: 'გადაეცით ეს მონაცემები',
     body: `<div class="secret">${esc(text)}</div>

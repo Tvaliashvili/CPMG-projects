@@ -1,4 +1,5 @@
 // Small shared helpers: finding elements, formatting, pop-up forms, messages.
+import { tr } from './i18n.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -79,7 +80,7 @@ export function openForm({ title, body, submit = 'შენახვა', onSubm
   });
   $('[data-cancel]', form).addEventListener('click', () => dialog.close());
   $('[data-delete]', form)?.addEventListener('click', async () => {
-    if (!confirm('ნამდვილად წავშალოთ?')) return;
+    if (!confirm(tr('ნამდვილად წავშალოთ?'))) return;
     busy(true);
     try { await onDelete(form); dialog.close(); } catch (err) { fail(err); }
   });

@@ -47,7 +47,7 @@ export async function renderDocuments(el) {
             <tr>
               <td><a href="#" data-open="${d.id}"><b>${esc(d.name)}</b></a>
                 ${d.staff_only ? ' <span class="chip chip-late">მხოლოდ თანამშრომლებისთვის</span>' : ''}
-                <span class="muted small show-phone">${esc(DOC_CATEGORIES[d.category])} · ${fileSize(d.size_bytes)} · ${fmtDate(d.created_at.slice(0, 10))}</span></td>
+                <span class="muted small show-phone"><span>${esc(DOC_CATEGORIES[d.category])}</span> · ${fileSize(d.size_bytes)} · ${fmtDate(d.created_at.slice(0, 10))}</span></td>
               <td class="hide-phone">${esc(DOC_CATEGORIES[d.category])}</td>
               <td class="num hide-phone small">${fileSize(d.size_bytes)}</td>
               <td class="hide-phone small">${esc(d.uploader_name ?? '')}<br><span class="muted">${fmtDate(d.created_at.slice(0, 10))}</span></td>

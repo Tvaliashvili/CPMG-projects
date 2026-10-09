@@ -26,7 +26,7 @@ export async function renderReport(el) {
       <div class="report-head">
         <div>
           <h1>${esc(p.name)}</h1>
-          <p class="muted" style="margin:0.2rem 0 0">${[p.client && `დამკვეთი: ${esc(p.client)}`, p.address && esc(p.address)].filter(Boolean).join(' · ')}</p>
+          <p class="muted" style="margin:0.2rem 0 0">${[p.client && `დამკვეთი: ${esc(p.client)}`, p.address && esc(p.address)].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
         </div>
         <div style="text-align:right">
           <b>პროექტის ანგარიში</b><br><span class="muted small">${fmtDate(today)}</span>

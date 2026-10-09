@@ -25,6 +25,7 @@
   <!-- Signing in: accounts are made by an administrator -->
   <main id="login" class="login hidden">
     <form id="login-form" class="login-card">
+      <button type="button" class="lang-switch" data-lang-switch data-no-t>EN</button>
       <img class="login-logo" src="img/logo.png" alt="CPMG - Project Management Company" />
       <label>ელფოსტა<input name="email" type="email" autocomplete="email" required /></label>
       <label>პაროლი<input name="password" type="password" autocomplete="current-password" required /></label>
@@ -42,7 +43,8 @@
         <a href="#/people" data-top="people" data-admin hidden>მომხმარებლები</a>
       </nav>
       <div class="me">
-        <span id="me-name" class="me-name"></span>
+        <span id="me-name" class="me-name" data-no-t></span>
+        <button type="button" class="lang-switch" data-lang-switch data-no-t>EN</button>
         <button type="button" id="sign-out" class="btn btn-ghost btn-sm">გასვლა</button>
       </div>
     </header>

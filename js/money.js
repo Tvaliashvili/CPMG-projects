@@ -1,6 +1,7 @@
 // Money: what came in, what went out, and the balance month by month.
 import { db, q } from './db.js';
 import { $, $$, esc, lari, fmtDate, monthName, todayISO, toast, openForm, options, numOrNull, MONTHS_SHORT } from './ui.js';
+import { tr } from './i18n.js';
 import { state, reloadMoney, contractorName, CATEGORIES, IN_CATEGORIES, OUT_CATEGORIES, moneyTotals, moneyByMonth } from './state.js';
 
 let filter = 'all';
@@ -65,14 +66,14 @@ export function drawChart(canvas, months, { animate = true } = {}) {
   chart?.destroy();
   chart = null;
   if (!canvas || !window.Chart) return;
-  const label = (ym) => `${MONTHS_SHORT[Number(ym.slice(5, 7)) - 1]} ${ym.slice(2, 4)}`;
+  const label = (ym) => `${tr(MONTHS_SHORT[Number(ym.slice(5, 7)) - 1])} ${ym.slice(2, 4)}`;
   chart = new window.Chart(canvas, {
     data: {
       labels: months.map((m) => label(m.month)),
       datasets: [
-        { type: 'bar', label: 'შემოსავალი', data: months.map((m) => m.incoming), backgroundColor: '#4ead72', borderRadius: 4 },
-        { type: 'bar', label: 'გასავალი', data: months.map((m) => m.outgoing), backgroundColor: '#e07a7a', borderRadius: 4 },
-        { type: 'line', label: 'ნაშთი', data: months.map((m) => m.balance), borderColor: '#1f3b63', backgroundColor: '#1f3b63', tension: 0.25, pointRadius: 3 },
+        { type: 'bar', label: tr('შემოსავალი'), data: months.map((m) => m.incoming), backgroundColor: '#4ead72', borderRadius: 4 },
+        { type: 'bar', label: tr('გასავალი'), data: months.map((m) => m.outgoing), backgroundColor: '#e07a7a', borderRadius: 4 },
+        { type: 'line', label: tr('ნაშთი'), data: months.map((m) => m.balance), borderColor: '#1f3b63', backgroundColor: '#1f3b63', tension: 0.25, pointRadius: 3 },
       ],
     },
     options: {

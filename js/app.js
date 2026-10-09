@@ -9,8 +9,10 @@ import { renderContractors } from './contractors.js';
 import { renderMoney } from './money.js';
 import { renderReport } from './report.js';
 import { renderPeople } from './people.js';
+import { startLanguage } from './i18n.js';
 
 const view = $('#view');
+startLanguage(); // ქარ / EN
 
 // Installable on a phone ("Add to Home screen"); the site works the same without it.
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
@@ -164,7 +166,7 @@ async function showProject(id, tab) {
           p.address && esc(p.address),
           p.start_date && `${fmtDate(p.start_date)} - ${fmtDate(p.end_date)}`,
           isStaff() && p.contract_value && `ხელშეკრულება: ${lari(p.contract_value)}`,
-        ].filter(Boolean).join(' · ')}</p>
+        ].filter(Boolean).map((part) => `<span>${part}</span>`).join(' · ')}</p>
       </div>
       ${isStaff() ? '<button class="btn btn-ghost btn-sm" data-edit-project>პროექტის რედაქტირება</button>' : ''}
     </div>

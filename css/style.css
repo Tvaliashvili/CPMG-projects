@@ -61,6 +61,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #9db7dd; outline-
 .brand img { display: block; height: 34px; width: auto; }
 .login-logo { display: block; width: min(15rem, 80%); height: auto; margin: 0 auto 0.5rem; }
 
+/* ---------- ქარ / EN ---------- */
+.lang-switch { padding: 0.3rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; font-size: 0.82rem; font-weight: 700; color: var(--navy); cursor: pointer; }
+.lang-switch:hover { border-color: #c5cfdc; }
+.login-card { position: relative; }
+.login-card .lang-switch { position: absolute; top: 0.9rem; right: 0.9rem; }
+
 /* ---------- Top bar ---------- */
 .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 1.5rem; padding: 0.7rem 1.5rem; background: #fff; border-bottom: 1px solid var(--line); }
 .topnav { display: flex; gap: 1.2rem; }
