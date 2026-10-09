@@ -19,8 +19,8 @@ The database enforces this (`supabase/schema.sql`), not only the screens.
 ## People
 
 Nobody can sign up. An administrator adds each person under **მომხმარებლები** with a password,
-and passes on the address, email and password. Everyone can change their own password
-under their name, top right. A forgotten password: an administrator sets a new one.
+and passes on the address, email and password. Only an administrator changes passwords
+("ახალი პაროლი" beside each person).
 
 ## Setting up a new copy
 

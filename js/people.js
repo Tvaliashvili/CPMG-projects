@@ -46,7 +46,7 @@ export async function renderPeople(el) {
           </tr>`).join('')}</tbody>
       </table>
     </div>
-    <p class="muted small">ახალ მომხმარებელს გადაეცით საიტის მისამართი, ელფოსტა და პაროლი. შესვლის შემდეგ პაროლს თავად შეცვლის "ჩემი ანგარიში" გვერდზე.</p>`;
+    <p class="muted small">ახალ მომხმარებელს გადაეცით საიტის მისამართი, ელფოსტა და პაროლი. პაროლის შესაცვლელად დააჭირეთ "ახალი პაროლი".</p>`;
 
   const ctx = { el, people, projects, links };
   $('[data-add]', el).addEventListener('click', () => personForm(null, ctx));

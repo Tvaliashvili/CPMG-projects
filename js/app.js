@@ -65,7 +65,7 @@ async function onSession(session) {
 }
 
 // =============================================================
-// Pages: #/ projects, #/p/<id>/<tab>, #/people, #/account
+// Pages: #/ projects, #/p/<id>/<tab>, #/people
 // =============================================================
 window.addEventListener('hashchange', () => { if (state.me) route(); });
 
@@ -76,7 +76,6 @@ export async function route() {
   try {
     if (page === 'p' && id) await showProject(id, tab || 'log');
     else if (page === 'people' && isAdmin()) await renderPeople(view);
-    else if (page === 'account') showAccount();
     else await showProjects();
   } catch (e) {
     view.innerHTML = `<div class="empty">${esc(e.message)}</div>`;
@@ -216,30 +215,5 @@ function projectForm(p = null) {
       location.hash = '#/';
     } : null,
     deleteText: 'პროექტის წაშლა',
-  });
-}
-
-// =============================================================
-// My account: a new password
-// =============================================================
-function showAccount() {
-  view.innerHTML = `
-    <div class="page-head"><h1>ჩემი ანგარიში</h1></div>
-    <div class="card stack" style="max-width:30rem">
-      <p style="margin:0"><b>${esc(state.me.full_name)}</b><br><span class="muted">${esc(state.me.email)}</span></p>
-      <form id="password-form" class="stack">
-        <label>ახალი პაროლი<input name="password" type="password" minlength="8" autocomplete="new-password" required></label>
-        <label>გაიმეორეთ<input name="again" type="password" minlength="8" autocomplete="new-password" required></label>
-        <button class="btn btn-primary" type="submit">პაროლის შეცვლა</button>
-      </form>
-    </div>`;
-  $('#password-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const f = e.currentTarget;
-    if (f.password.value !== f.again.value) { toast('პაროლები არ ემთხვევა.', true); return; }
-    const { error } = await db.auth.updateUser({ password: f.password.value });
-    if (error) { toast(error.message, true); return; }
-    f.reset();
-    toast('პაროლი შეიცვალა');
   });
 }
