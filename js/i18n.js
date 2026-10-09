@@ -245,6 +245,7 @@ const EN = {
   'ამ ელფოსტით ანგარიში უკვე არსებობს.': 'There is already an account with this email.',
   'ვერ შეიქმნა.': 'Could not be created.',
   'საკუთარ თავს ვერ წაშლით.': 'You cannot remove yourself.',
+  'სესია ამოიწურა. შედით თავიდან.': 'Your session has ended. Please sign in again.',
 };
 MONTHS_KA.forEach((m, i) => { EN[m] = MONTHS_EN[i]; });
 SHORT_KA.forEach((m, i) => { EN[m] = SHORT_EN[i]; });

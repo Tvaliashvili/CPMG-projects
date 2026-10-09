@@ -1,5 +1,5 @@
 // CPMG Projects - signing in, moving between pages, the projects list.
-import { db, q } from './db.js';
+import { db, q, signOutHere } from './db.js';
 import { $, $$, esc, fmtDate, lari, todayISO, toast, openForm, numOrNull } from './ui.js';
 import { state, isAdmin, isStaff, loadProject, progressOf } from './state.js';
 import { renderLogs } from './logs.js';
@@ -40,7 +40,9 @@ $('#login-form').addEventListener('submit', async (e) => {
   }
 });
 
-$('#sign-out').addEventListener('click', () => db.auth.signOut());
+// Signing out clears this device's sign-in even when the server has already ended it
+// (a changed password ends every session there).
+$('#sign-out').addEventListener('click', () => signOutHere());
 
 let signedInAs; // undefined until the first answer, so "signed out" is shown too
 db.auth.onAuthStateChange((_event, session) => {
@@ -58,12 +60,20 @@ async function onSession(session) {
     $('#login').classList.remove('hidden');
     return;
   }
+  // A sign-in the server has ended (say, after a password change) still opens pages for
+  // a while, but cannot sign out or add people: it is dropped now, for a fresh sign-in.
+  const { error: dead } = await db.auth.getUser();
+  if (dead && dead.name !== 'AuthRetryableFetchError') { // not merely offline
+    toast('სესია ამოიწურა. შედით თავიდან.', true);
+    await signOutHere();
+    return;
+  }
   try {
     state.me = await q(db.from('people').select('*').eq('user_id', userId).maybeSingle());
   } catch (e) { toast(e.message, true); }
   if (!state.me) {
     toast('ანგარიში ჯერ არ არის გამართული. მიმართეთ ადმინისტრატორს.', true);
-    await db.auth.signOut();
+    await signOutHere();
     return;
   }
   $('#me-name').textContent = state.me.full_name;
