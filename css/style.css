@@ -94,8 +94,19 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #9db7dd; outline-
 .chip-done { background: var(--green-bg); color: var(--green); }
 .chip-late { background: var(--red-bg); color: var(--red); }
 .chip-now { background: #e6eefa; color: var(--navy-2); }
-.chip-in { background: var(--green-bg); color: var(--green); }
-.chip-out { background: var(--red-bg); color: var(--red); }
+/* Money types, each its own colour (the amount beside it says in or out) */
+.cat-client { background: var(--green-bg); color: var(--green); }
+.cat-contractor { background: #e6eefa; color: var(--navy-2); }
+.cat-materials { background: var(--amber-bg); color: var(--amber); }
+.cat-equipment { background: #e0f2f1; color: #0f766e; }
+.cat-wages { background: #f1e8fb; color: #7e22ce; }
+.cat-other { background: #eef2f7; color: #475569; }
+.line[data-cat] { border-left: 4px solid #cbd5e1; }
+.line[data-cat=client] { border-left-color: var(--green); }
+.line[data-cat=contractor] { border-left-color: var(--navy-2); }
+.line[data-cat=materials] { border-left-color: var(--amber); }
+.line[data-cat=equipment] { border-left-color: #0f766e; }
+.line[data-cat=wages] { border-left-color: #7e22ce; }
 
 /* ---------- Project header and tabs ---------- */
 .project-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.8rem; margin-bottom: 1rem; }

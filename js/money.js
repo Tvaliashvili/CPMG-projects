@@ -82,7 +82,7 @@ function drawEntries(el) {
           <tbody>${entries.map((m, i) => `
             <tr class="${isAdmin() ? 'click' : ''}${m.waybill_no ? ' in-waybill' : ''}" ${isAdmin() ? `data-entry="${m.id}"` : ''}>
               <td class="small" style="white-space:nowrap">${fmtDate(m.entry_date)}</td>
-              <td><span class="chip ${m.direction === 'in' ? 'chip-in' : 'chip-out'}">${esc(CATEGORIES[m.category])}</span>
+              <td><span class="chip cat-${m.category}">${esc(CATEGORIES[m.category])}</span>
                 ${m.contractor_id ? `<br><span class="small">${esc(contractorName(m.contractor_id))}</span>` : ''}
                 ${pick(m, 'description') ? `<span class="muted small show-phone">${esc(pick(m, 'description'))}</span>` : ''}</td>
               <td class="hide-phone small">${esc(pick(m, 'description')) || '<span class="muted">-</span>'}</td>
@@ -207,6 +207,8 @@ function moneyForm(m, el) {
         select.innerHTML = options(list.map((k) => [k, CATEGORIES[k]]), pickOne);
       };
       const sync = () => {
+        // Each line edged in its type's colour, as its label is in the list.
+        $$('[data-line]', form).forEach((l) => { l.dataset.cat = $('[data-f=category]', l).value; });
         // A contractor is asked for only when a line is a payment to one.
         const show = $$('[data-f=category]', form).some((s) => s.value === 'contractor');
         $('[data-contractor-field]', form).hidden = !show;
@@ -332,6 +334,8 @@ function waybillForm(bills, entered, el) {
       <div class="lines-foot"><span class="muted small" data-count></span><span><span>სულ</span> <b data-total></b></span></div>`,
     onOpen: (form) => {
       const sync = () => {
+        // Each line edged in its type's colour, as its label is in the list.
+        $$('[data-line]', form).forEach((l) => { l.dataset.cat = $('[data-f=category]', l).value; });
         let total = 0, count = 0;
         $$('[data-bill]', form).forEach((b) => {
           const take = $('[data-take]', b).checked;
