@@ -186,6 +186,13 @@ const EN = {
   'მასალები': 'Materials',
   'ტექნიკა': 'Equipment',
   'ხელფასები': 'Wages',
+  'ზედნადების ნომერი': 'Waybill number',
+  'არასავალდებულო': 'Optional',
+  'ხაზის დამატება': 'Add line',
+  'ხაზის წაშლა': 'Remove line',
+  'აღწერა ქართულად': 'Description in Georgian',
+  'დაამატეთ ერთი ხაზი მაინც.': 'Add at least one line.',
+  'ჩაწერეთ თანხა ყველა ხაზზე.': 'Enter an amount on every line.',
 
   // Report
   'დაბეჭდეთ, ან ბეჭდვის ფანჯარაში აირჩიეთ "Save as PDF".': 'Print it, or choose "Save as PDF" in the print window.',
@@ -346,6 +353,8 @@ const PATTERNS = [
   [/^ბალანსი უარყოფითია: (.+)$/s, (m, a) => `Balance is negative: ${a}`],
   [/^გადახდილია (\d+)%, შესრულებულია (\d+)%$/, (m, a, b) => `paid ${a}%, work done ${b}%`],
   [/^ვადაგადაცილებული: (\d+)$/, (m, a) => `overdue: ${a}`],
+  [/^ზედნადები: (.+)$/s, (m, a) => `Waybill: ${a}`],
+  [/^შენახულია (\d+) ჩანაწერი$/, (m, a) => `${a} entries saved`],
 ];
 
 /** One phrase in the interface's language. Georgian is returned as it is. */

@@ -439,3 +439,10 @@ begin
 end $$;
 revoke all on function public.delete_message(uuid) from public, anon;
 grant execute on function public.delete_message(uuid) to authenticated;
+
+-- =============================================================
+-- Waybill number on money out (RS.ge სასაქონლო ზედნადები), optional.
+-- One waybill often becomes several entries - materials, equipment - so it is not unique.
+-- =============================================================
+alter table public.money add column if not exists waybill_no text check (length(waybill_no) <= 40);
+create index if not exists money_waybill on public.money (project_id, waybill_no) where waybill_no is not null;
