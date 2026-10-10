@@ -446,3 +446,37 @@ grant execute on function public.delete_message(uuid) to authenticated;
 -- =============================================================
 alter table public.money add column if not exists waybill_no text check (length(waybill_no) <= 40);
 create index if not exists money_waybill on public.money (project_id, waybill_no) where waybill_no is not null;
+
+-- =============================================================
+-- When each person was last here: their last sign-in (kept by Supabase) and the last
+-- time they opened the app (someone who stays signed in for weeks never signs in again).
+-- Only administrators read it, through people_activity().
+-- =============================================================
+create table if not exists public.last_seen (
+  user_id uuid primary key references public.people(user_id) on delete cascade,
+  seen_at timestamptz not null default now()
+);
+alter table public.last_seen enable row level security; -- no policies: only the functions below touch it
+
+create or replace function public.i_am_here() returns void
+language sql security definer set search_path = public as $$
+  insert into public.last_seen (user_id, seen_at) select auth.uid(), now()
+   where exists (select 1 from public.people where user_id = auth.uid())
+  on conflict (user_id) do update set seen_at = excluded.seen_at;
+$$;
+revoke all on function public.i_am_here() from public, anon;
+grant execute on function public.i_am_here() to authenticated;
+
+create or replace function public.people_activity()
+returns table (user_id uuid, last_sign_in_at timestamptz, seen_at timestamptz)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'not allowed'; end if;
+  return query
+    select p.user_id, u.last_sign_in_at, s.seen_at
+      from public.people p
+      left join auth.users u on u.id = p.user_id
+      left join public.last_seen s on s.user_id = p.user_id;
+end $$;
+revoke all on function public.people_activity() from public, anon;
+grant execute on function public.people_activity() to authenticated;

@@ -1,6 +1,6 @@
 // People (administrators only): who can sign in, their role, and which projects a subcontractor sees.
 import { db, q, peopleCall } from './db.js';
-import { $, $$, esc, toast, openForm, options, pick, pair, texts } from './ui.js';
+import { $, $$, esc, toast, openForm, options, pick, pair, texts, fmtDate } from './ui.js';
 import { state, ROLE_NAMES } from './state.js';
 import { tr } from './i18n.js';
 
@@ -19,12 +19,33 @@ function newPassword() {
 
 const siteAddress = () => location.href.split('#')[0];
 
+/** "5 წუთის წინ", "დღეს 14:20", "გუშინ 09:05", or the date - with the exact time on hover. */
+function whenHere(at) {
+  if (!at) return '<span class="muted">არასდროს</span>';
+  const t = new Date(at);
+  const mins = Math.floor((Date.now() - t) / 60_000);
+  const hm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  const day = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const yesterday = new Date(Date.now() - 86_400_000);
+  const exact = `${fmtDate(t.toLocaleDateString('en-CA'))} ${hm}`;
+  const said = mins < 2 ? 'ახლახან'
+    : mins < 60 ? `${mins} წუთის წინ`
+      : day(t) === day(new Date()) ? `დღეს ${hm}`
+        : day(t) === day(yesterday) ? `გუშინ ${hm}`
+          : exact;
+  return `<span title="${exact}" class="${mins < 15 ? 'good' : ''}">${said}</span>`;
+}
+
 export async function renderPeople(el) {
-  const [people, projects, links] = await Promise.all([
+  const [people, projects, links, activity] = await Promise.all([
     q(db.from('people').select('*').order('full_name')),
     q(db.from('projects').select('id, name, archived').order('name')),
     q(db.from('project_people').select('*')),
+    db.rpc('people_activity').then((r) => r.data ?? [], () => []), // the page works without it
   ]);
+  // Last here: the later of a sign-in and opening the app. The most recent first; never, last.
+  const lastHere = new Map(activity.map((a) => [a.user_id, [a.last_sign_in_at, a.seen_at].filter(Boolean).sort().at(-1) ?? null]));
+  people.sort((a, b) => (lastHere.get(b.user_id) ?? '').localeCompare(lastHere.get(a.user_id) ?? ''));
   const projectsOf = (id) => links.filter((l) => l.user_id === id).map((l) => pick(projects.find((p) => p.id === l.project_id), 'name')).filter(Boolean);
 
   el.innerHTML = `
@@ -34,12 +55,13 @@ export async function renderPeople(el) {
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>სახელი</th><th>როლი</th><th class="hide-phone">პროექტები</th><th></th></tr></thead>
+        <thead><tr><th>სახელი</th><th>როლი</th><th class="hide-phone">პროექტები</th><th>ბოლოს შემოვიდა</th><th></th></tr></thead>
         <tbody>${people.map((p) => `
           <tr>
             <td><b>${esc(pick(p, 'full_name'))}</b><br><span class="muted small">${esc(p.email)}</span>${pick(p, 'company') ? `<br><span class="small">${esc(pick(p, 'company'))}</span>` : ''}</td>
             <td>${ROLE_NAMES[p.role]}</td>
             <td class="hide-phone small">${p.role === 'subcontractor' ? esc(projectsOf(p.user_id).join(', ')) || '<span class="bad">არცერთი</span>' : '<span class="muted">ყველა</span>'}</td>
+            <td class="small">${whenHere(lastHere.get(p.user_id))}</td>
             <td class="num">
               <button class="btn btn-ghost btn-sm" data-edit="${p.user_id}">რედაქტირება</button>
               <button class="btn btn-ghost btn-sm" data-password="${p.user_id}">ახალი პაროლი</button>

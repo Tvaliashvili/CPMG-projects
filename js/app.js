@@ -117,8 +117,19 @@ function openApp() {
   $$('[data-admin]').forEach((el) => { el.hidden = !isAdmin(); });
   $('#login').classList.add('hidden');
   $('#app').classList.remove('hidden');
+  imHere();
   route();
 }
+
+// Noted for the administrators' "last here" (people_activity): on opening the app, and on
+// coming back to it after a while - a phone keeps the page open for days.
+let lastNoted = 0;
+function imHere() {
+  if (!state.me || Date.now() - lastNoted < 10 * 60_000) return;
+  lastNoted = Date.now();
+  db.rpc('i_am_here').then(() => {}, () => {}); // not essential
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') imHere(); });
 
 // =============================================================
 // Pages: #/ projects, #/p/<id>/<tab>, #/people
