@@ -96,39 +96,65 @@ function tableRows(page) {
   })).filter((r) => r.name || r.total);
 }
 
+/** "ელ- 1012219478" anywhere on a page, as "ელ-1012219478"; or a bare number after "ზედნადები #". */
+function numberOn(page) {
+  for (const it of page.slice().sort(byReading)) {
+    const m = it.str.match(/ელ-?\s*(\d{6,})/) ?? it.str.match(/ზედნადები\s*#\s*(\d{6,})/);
+    if (m) return `ელ-${m[1]}`;
+  }
+  const title = page.find((it) => /ზედნადები\s*#/.test(it.str));
+  const beside = title && page.find((it) => it !== title && sameLine(it, title) && /\d{6,}/.test(it.str));
+  return beside ? `ელ-${beside.str.match(/\d{6,}/)[0]}` : null;
+}
+
+/** The page number at the foot of a page ("გვ. 2"), or null. */
+function pageNoOf(page) {
+  const it = page.find((x) => /^გვ\.?\s*\d+$/.test(x.str));
+  return it ? Number(it.str.match(/\d+/)[0]) : null;
+}
+
+/** A waybill's first page, read for its heading fields. */
+function coverOf(page, number) {
+  const dateItem = page.filter((it) => DATE.test(it.str)).sort(byReading)[0];
+  const [, d, m, y] = dateItem?.str.match(DATE) ?? [];
+  const parties = fieldLine(page, '4');
+  const ids = parties.filter((it) => TAX_ID.test(it.str));
+  const sellerEnd = parties.indexOf(ids[0]);
+  return {
+    number: number ?? '',
+    date: y ? `${y}-${m}-${d}` : null,
+    seller: (sellerEnd > 0 ? parties.slice(0, sellerEnd) : []).map((it) => it.str).join(' '),
+    sellerId: ids[0]?.str ?? '',
+    buyerId: ids[1]?.str ?? '',
+    from: fieldLine(page, '7').map((it) => it.str).join(' '),
+    to: fieldLine(page, '8').map((it) => it.str).join(' '),
+    total: null,
+    items: [],
+  };
+}
+
 /**
  * The waybills in a PDF's pages, in the order printed:
- * [{ number, date, seller, sellerId, buyer, from, to, total, items: [...] }].
+ * [{ number, date, seller, sellerId, buyerId, from, to, total, items: [...] }].
  * `total` is the waybill's own total (field 13); the items' totals add up to it.
+ *
+ * A page starts a new waybill when it is a cover - "გვ. 1" at its foot, or a title
+ * whose number is not the waybill being read. Other pages (გვ. 2, 3..., and annexes,
+ * "1012219478 სასაქონლო ზედნადების დანართი") go on with the waybill before them.
  */
 export function parseWaybills(pages) {
   const bills = [];
   for (const page of pages) {
-    const title = page.find((it) => it.str.startsWith('სასაქონლო ზედნადები #'));
-    if (title) {
-      // "ელ- 1012219478" - its number, beside the title or in the title itself.
-      const numberItem = page.find((it) => sameLine(it, title) && /\d{6,}/.test(it.str) && it !== title) ?? title;
-      const number = numberItem.str.replace(/^.*#\s*/, '').replace(/\s+/g, '');
-      const dateItem = page.filter((it) => DATE.test(it.str)).sort(byReading)[0];
-      const [, d, m, y] = dateItem?.str.match(DATE) ?? [];
-      const parties = fieldLine(page, '4');
-      const ids = parties.filter((it) => TAX_ID.test(it.str));
-      const sellerEnd = parties.indexOf(ids[0]);
-      bills.push({
-        number,
-        date: y ? `${y}-${m}-${d}` : null,
-        seller: (sellerEnd > 0 ? parties.slice(0, sellerEnd) : []).map((it) => it.str).join(' '),
-        sellerId: ids[0]?.str ?? '',
-        buyerId: ids[1]?.str ?? '',
-        from: fieldLine(page, '7').map((it) => it.str).join(' '),
-        to: fieldLine(page, '8').map((it) => it.str).join(' '),
-        total: null,
-        items: [],
-      });
-    }
-    // An annex page: "1012219478 სასაქონლო ზედნადების დანართი" - more items of a waybill already begun.
+    const isAnnex = page.some((it) => /ზედნადების დანართი/.test(it.str));
+    const hasTitle = !isAnnex && page.some((it) => /სასაქონლო ზედნადები\s*#/.test(it.str));
+    const number = numberOn(page);
+    const current = bills.at(-1);
+    const startsNew = !current
+      || pageNoOf(page) === 1
+      || (hasTitle && number !== current.number)
+      || (isAnnex && number && current.number && number !== current.number);
+    if (startsNew) bills.push(coverOf(page, number));
     const bill = bills.at(-1);
-    if (!bill) continue;
     bill.items.push(...tableRows(page));
     const total = page.find((it) => /^\d+(\.\d+)? - /.test(it.str));
     if (total) bill.total = num(total.str.split(' - ')[0]);
@@ -139,5 +165,5 @@ export function parseWaybills(pages) {
     b.items = b.items.filter((it) => !seen.has(it.no) && seen.add(it.no));
     b.total ??= b.items.reduce((s, it) => s + it.total, 0);
   }
-  return bills;
+  return bills.filter((b) => b.items.length || b.number);
 }

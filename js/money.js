@@ -312,9 +312,13 @@ function waybillForm(bills, entered, el) {
         const sum = b.items.reduce((s, it) => s + it.total, 0);
         return `
           <div class="wb" data-bill="${i}">
-            <label class="check wb-head"><input type="checkbox" data-take ${here || elsewhere ? '' : 'checked'}>
-              <span><b>${esc(b.number)}</b> · ${fmtDate(b.date)} · ${lari(b.total)}<br>
-              <span class="muted small">${esc(b.seller)}${b.to ? ` → ${esc(b.to)}` : ''}</span></span></label>
+            <div class="wb-head">
+              <input type="checkbox" data-take aria-label="შენახვა" ${here || elsewhere ? '' : 'checked'}>
+              <input data-f="number" maxlength="40" placeholder="ზედნადების ნომერი" aria-label="ზედნადების ნომერი" value="${esc(b.number)}">
+              <input data-f="date" type="date" aria-label="თარიღი" value="${esc(b.date ?? todayISO())}" required>
+              <b class="wb-total">${lari(b.total)}</b>
+            </div>
+            ${b.seller || b.to ? `<span class="muted small">${esc(b.seller)}${b.to ? ` → ${esc(b.to)}` : ''}</span>` : ''}
             ${here ? '<span class="chip chip-late">უკვე შეტანილია ამ პროექტში</span>' : ''}
             ${elsewhere ? '<span class="chip chip-late">უკვე შეტანილია სხვა პროექტში</span>' : ''}
             ${Math.abs(sum - b.total) > 0.01 ? `<span class="chip chip-late">საქონლის ჯამი ${lari(sum)} - შეამოწმეთ</span>` : ''}
@@ -355,12 +359,11 @@ function waybillForm(bills, entered, el) {
     },
     onSubmit: async (form) => {
       const rows = $$('[data-bill]', form).filter((b) => $('[data-take]', b).checked).flatMap((b) => {
-        const bill = bills[Number(b.dataset.bill)];
         return $$('[data-line]', b).map((l) => ({
           project_id: state.project.id,
           direction: 'out',
-          entry_date: bill.date ?? todayISO(),
-          waybill_no: bill.number,
+          entry_date: $('[data-f=date]', b).value || todayISO(),
+          waybill_no: $('[data-f=number]', b).value.trim() || null,
           category: $('[data-f=category]', l).value,
           amount: numOrNull($('[data-f=amount]', l).value),
           description: $('[data-f=description]', l).value.trim() || null,

@@ -209,8 +209,9 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .head-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 /* Waybills read from a PDF, each with its items */
 .wb { display: grid; gap: 0.5rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
-.wb-head { align-items: flex-start; }
-.wb-head input { margin-top: 0.3rem; }
+.wb-head { display: grid; grid-template-columns: auto 1fr 10rem auto; gap: 0.5rem; align-items: center; }
+.wb-head [data-take] { width: auto; }
+.wb-total { white-space: nowrap; }
 .wb-off .lines, .wb-off .wb-sum { display: none; }
 .wb-sum { display: flex; justify-content: flex-end; gap: 0.5rem; font-size: 0.9rem; }
 .sum-row td { background: #f8fafc; font-size: 0.88rem; }
@@ -322,6 +323,9 @@ tr.in-waybill:has(+ tr.in-waybill) td, tr.in-waybill:has(+ .sum-row) td { border
   .line-texts { grid-template-columns: 1fr; }
   .head-actions, .head-actions .btn { flex: 1 1 100%; }
   .wb .line-top { grid-template-columns: 1fr 7rem 0; }
+  .wb-head { grid-template-columns: auto 1fr; }
+  .wb-head [data-f=date] { grid-column: 2; }
+  .wb-total { grid-column: 2; }
   .pair-boxes { grid-template-columns: 1fr; }
   .page-head .btn { flex: 1 1 100%; }
   th, td { padding: 0.5rem 0.6rem; }
