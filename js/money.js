@@ -80,14 +80,12 @@ function drawEntries(el) {
         <table>
           <thead><tr><th>თარიღი</th><th>სახე</th><th class="hide-phone">აღწერა</th><th class="num">თანხა</th></tr></thead>
           <tbody>${entries.map((m, i) => `
-            <tr ${isAdmin() ? `class="click" data-entry="${m.id}"` : ''}>
+            <tr class="${isAdmin() ? 'click' : ''}${m.waybill_no ? ' in-waybill' : ''}" ${isAdmin() ? `data-entry="${m.id}"` : ''}>
               <td class="small" style="white-space:nowrap">${fmtDate(m.entry_date)}</td>
               <td><span class="chip ${m.direction === 'in' ? 'chip-in' : 'chip-out'}">${esc(CATEGORIES[m.category])}</span>
                 ${m.contractor_id ? `<br><span class="small">${esc(contractorName(m.contractor_id))}</span>` : ''}
-                ${pick(m, 'description') ? `<span class="muted small show-phone">${esc(pick(m, 'description'))}</span>` : ''}
-                ${m.waybill_no ? `<span class="muted small show-phone">ზედნადები: ${esc(m.waybill_no)}</span>` : ''}</td>
-              <td class="hide-phone small">${esc(pick(m, 'description')) || '<span class="muted">-</span>'}
-                ${m.waybill_no ? `<br><span class="muted">ზედნადები: ${esc(m.waybill_no)}</span>` : ''}</td>
+                ${pick(m, 'description') ? `<span class="muted small show-phone">${esc(pick(m, 'description'))}</span>` : ''}</td>
+              <td class="hide-phone small">${esc(pick(m, 'description')) || '<span class="muted">-</span>'}</td>
               <td class="num ${m.direction === 'in' ? 'good' : 'bad'}">${m.direction === 'in' ? '+' : '−'}${lari(m.amount)}</td>
             </tr>${waybillSum(entries, i)}`).join('')}</tbody>
         </table>
@@ -117,15 +115,14 @@ async function elsewhere(box, term) {
 }
 
 /**
- * After the last of a waybill's entries (they sit together in the list), the
- * waybill's total - when it was split over more than one entry.
+ * After the last of a waybill's entries (they sit together in the list): the
+ * waybill's number and total, closing the group. The entries themselves do not repeat the number.
  */
 function waybillSum(entries, i) {
   const no = entries[i].waybill_no;
   if (!no || entries[i + 1]?.waybill_no === no) return '';
   let first = i;
   while (entries[first - 1]?.waybill_no === no) first -= 1;
-  if (first === i) return '';
   const sum = entries.slice(first, i + 1).reduce((s, m) => s + Number(m.amount), 0);
   return `
     <tr class="sum-row"><td colspan="2"><span>ზედნადები ${esc(no)}, სულ</span> <span class="muted small">(${i - first + 1})</span></td>

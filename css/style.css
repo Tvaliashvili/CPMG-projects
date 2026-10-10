@@ -203,6 +203,9 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .wb-off .lines, .wb-off .wb-sum { display: none; }
 .wb-sum { display: flex; justify-content: flex-end; gap: 0.5rem; font-size: 0.9rem; }
 .sum-row td { background: #f8fafc; font-size: 0.88rem; }
+/* A waybill's entries, wrapped together down to their total row */
+tr.in-waybill td:first-child, .sum-row td:first-child { box-shadow: inset 3px 0 0 #9db7dd; }
+tr.in-waybill:has(+ tr.in-waybill) td, tr.in-waybill:has(+ .sum-row) td { border-bottom-style: dashed; }
 .wb .line-top { grid-template-columns: 1fr 9rem 0; }
 .lines-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .radio-row label { display: flex; align-items: center; gap: 0.4rem; font-weight: 500; }
