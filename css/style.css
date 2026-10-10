@@ -190,6 +190,15 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .line-del { height: 2rem; border: 0; border-radius: 6px; background: none; font-size: 1.2rem; line-height: 1; color: var(--muted); cursor: pointer; }
 .line-del:hover { background: var(--red-bg); color: var(--red); }
 .line-top .line-del[hidden] { display: block; visibility: hidden; }
+.head-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+/* Waybills read from a PDF, each with its items */
+.wb { display: grid; gap: 0.5rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
+.wb-head { align-items: flex-start; }
+.wb-head input { margin-top: 0.3rem; }
+.wb-off .lines, .wb-off .wb-sum { display: none; }
+.wb-sum { display: flex; justify-content: flex-end; gap: 0.5rem; font-size: 0.9rem; }
+.sum-row td { background: #f8fafc; font-size: 0.88rem; }
+.wb .line-top { grid-template-columns: 1fr 9rem 0; }
 .lines-foot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .radio-row label { display: flex; align-items: center; gap: 0.4rem; font-weight: 500; }
 .radio-row input, .check input { width: auto; }
@@ -292,6 +301,8 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
   .dialog .row { grid-template-columns: 1fr; }
   .line-top { grid-template-columns: 1fr 7rem 2rem; }
   .line-texts { grid-template-columns: 1fr; }
+  .head-actions, .head-actions .btn { flex: 1 1 100%; }
+  .wb .line-top { grid-template-columns: 1fr 7rem 0; }
   .pair-boxes { grid-template-columns: 1fr; }
   .page-head .btn { flex: 1 1 100%; }
   th, td { padding: 0.5rem 0.6rem; }

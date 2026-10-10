@@ -2,6 +2,7 @@
 import { db, q } from './db.js';
 import { $, $$, esc, lari, fmtDate, monthName, todayISO, toast, openForm, options, numOrNull, MONTHS_SHORT, pick, text } from './ui.js';
 import { tr } from './i18n.js';
+import { readWaybills } from './waybill.js';
 import { state, isAdmin, reloadMoney, contractorName, CATEGORIES, IN_CATEGORIES, OUT_CATEGORIES, moneyTotals, moneyByMonth } from './state.js';
 
 let filter = 'all';
@@ -17,7 +18,9 @@ export async function renderMoney(el) {
   el.innerHTML = `
     <div class="page-head">
       <h2>ფინანსები</h2>
-      ${isAdmin() ? '<button class="btn btn-primary" data-add>+ ჩანაწერის დამატება</button>' : ''}
+      ${isAdmin() ? `<span class="head-actions">
+        <button class="btn btn-ghost" data-import>ზედნადებების იმპორტი (PDF)</button>
+        <button class="btn btn-primary" data-add>+ ჩანაწერის დამატება</button></span>` : ''}
     </div>
     <div class="stats">
       <div class="stat"><b class="good">${lari(t.incoming)}</b><span>შემოსავალი</span></div>
@@ -43,7 +46,7 @@ export async function renderMoney(el) {
       <div class="table-wrap">
         <table>
           <thead><tr><th>თარიღი</th><th>სახე</th><th class="hide-phone">აღწერა</th><th class="num">თანხა</th></tr></thead>
-          <tbody>${entries.map((m) => `
+          <tbody>${entries.map((m, i) => `
             <tr ${isAdmin() ? `class="click" data-entry="${m.id}"` : ''}>
               <td class="small" style="white-space:nowrap">${fmtDate(m.entry_date)}</td>
               <td><span class="chip ${m.direction === 'in' ? 'chip-in' : 'chip-out'}">${esc(CATEGORIES[m.category])}</span>
@@ -53,14 +56,31 @@ export async function renderMoney(el) {
               <td class="hide-phone small">${esc(pick(m, 'description')) || '<span class="muted">-</span>'}
                 ${m.waybill_no ? `<br><span class="muted">ზედნადები: ${esc(m.waybill_no)}</span>` : ''}</td>
               <td class="num ${m.direction === 'in' ? 'good' : 'bad'}">${m.direction === 'in' ? '+' : '−'}${lari(m.amount)}</td>
-            </tr>`).join('')}</tbody>
+            </tr>${waybillSum(entries, i)}`).join('')}</tbody>
         </table>
       </div>` : '<div class="empty">ჩანაწერები ჯერ არ არის.</div>'}`;
 
   $('[data-add]', el)?.addEventListener('click', () => moneyForm(null, el));
+  $('[data-import]', el)?.addEventListener('click', () => pickWaybills(el));
   $$('[data-filter]', el).forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; renderMoney(el); }));
   $$('[data-entry]', el).forEach((tr) => tr.addEventListener('click', () => moneyForm(state.money.find((m) => m.id === tr.dataset.entry), el)));
   drawChart($('canvas', el), months);
+}
+
+/**
+ * After the last of a waybill's entries (they sit together in the list), the
+ * waybill's total - when it was split over more than one entry.
+ */
+function waybillSum(entries, i) {
+  const no = entries[i].waybill_no;
+  if (!no || entries[i + 1]?.waybill_no === no) return '';
+  let first = i;
+  while (entries[first - 1]?.waybill_no === no) first -= 1;
+  if (first === i) return '';
+  const sum = entries.slice(first, i + 1).reduce((s, m) => s + Number(m.amount), 0);
+  return `
+    <tr class="sum-row"><td colspan="2"><span>ზედნადები ${esc(no)}, სულ</span> <span class="muted small">(${i - first + 1})</span></td>
+      <td class="hide-phone"></td><td class="num bad"><b>−${lari(sum)}</b></td></tr>`;
 }
 
 /** In and out as bars, the balance as a line. */
@@ -120,6 +140,7 @@ function moneyForm(m, el) {
         <label><input type="radio" name="direction" value="in" ${direction === 'in' ? 'checked' : ''}> შემოსავალი</label>
         <label><input type="radio" name="direction" value="out" ${direction === 'out' ? 'checked' : ''}> გასავალი</label>
       </div>
+      ${m ? '' : '<button type="button" class="btn btn-ghost btn-sm" data-from-pdf>ზედნადების PDF-იდან შევსება</button>'}
       <div class="row">
         <label>თარიღი<input name="entry_date" type="date" required value="${esc(m?.entry_date ?? todayISO())}"></label>
         <label data-waybill-field>ზედნადების ნომერი<input name="waybill_no" maxlength="40" placeholder="არასავალდებულო" value="${esc(m?.waybill_no)}"></label>
@@ -158,6 +179,7 @@ function moneyForm(m, el) {
         $('[data-del-line]', line).addEventListener('click', () => { line.remove(); sync(); });
       };
       wire($('[data-line]', box), m?.category);
+      $('[data-from-pdf]', form)?.addEventListener('click', () => pickWaybills(el));
       $('[data-add-line]', form).addEventListener('click', () => {
         const above = $$('[data-f=category]', form).at(-1)?.value; // the same type as the line above
         box.insertAdjacentHTML('beforeend', lineHtml());
@@ -203,5 +225,103 @@ function moneyForm(m, el) {
       await reloadMoney();
       renderMoney(el);
     } : null,
+  });
+}
+
+// ---------- Waybills from RS.ge: a PDF read, checked here, saved as money out ----------
+/** Asks for a waybill PDF, then shows what it holds for checking. */
+function pickWaybills(el) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf,.pdf';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    toast(tr('PDF იკითხება…'));
+    try {
+      const bills = await readWaybills(file);
+      if (!bills.length) throw new Error('ამ PDF-ში ზედნადები ვერ მოიძებნა.');
+      // Already entered, on this project or another: those come unticked.
+      const entered = await q(db.from('money').select('waybill_no, project_id').in('waybill_no', bills.map((b) => b.number)));
+      waybillForm(bills, entered, el);
+    } catch (e) { toast(e.message, true); }
+  });
+  input.click();
+}
+
+/** Every waybill in the PDF with its items, each item a line of money out - materials unless changed. */
+function waybillForm(bills, entered, el) {
+  const fmtQty = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: 3 });
+  const describe = (it) => `${it.name} - ${fmtQty(it.qty)} ${it.unit} × ${lari(it.price)}`.slice(0, 300);
+  openForm({
+    title: 'ზედნადებების იმპორტი',
+    submit: 'შენახვა',
+    body: `
+      <p class="muted small" style="margin:0">თითოეული საქონელი ცალკე ჩანაწერად შეინახება. სახე შეცვალეთ, სადაც მასალა არ არის.</p>
+      ${bills.map((b, i) => {
+        const here = entered.some((x) => x.waybill_no === b.number && x.project_id === state.project.id);
+        const elsewhere = !here && entered.some((x) => x.waybill_no === b.number);
+        const sum = b.items.reduce((s, it) => s + it.total, 0);
+        return `
+          <div class="wb" data-bill="${i}">
+            <label class="check wb-head"><input type="checkbox" data-take ${here || elsewhere ? '' : 'checked'}>
+              <span><b>${esc(b.number)}</b> · ${fmtDate(b.date)} · ${lari(b.total)}<br>
+              <span class="muted small">${esc(b.seller)}${b.to ? ` → ${esc(b.to)}` : ''}</span></span></label>
+            ${here ? '<span class="chip chip-late">უკვე შეტანილია ამ პროექტში</span>' : ''}
+            ${elsewhere ? '<span class="chip chip-late">უკვე შეტანილია სხვა პროექტში</span>' : ''}
+            ${Math.abs(sum - b.total) > 0.01 ? `<span class="chip chip-late">საქონლის ჯამი ${lari(sum)} - შეამოწმეთ</span>` : ''}
+            <div class="lines">${b.items.map((it) => `
+              <div class="line" data-line>
+                <div class="line-top">
+                  <select data-f="category" aria-label="სახე">${options(OUT_CATEGORIES.filter((k) => k !== 'contractor').map((k) => [k, CATEGORIES[k]]), 'materials')}</select>
+                  <input data-f="amount" inputmode="decimal" aria-label="თანხა (₾)" value="${it.total}">
+                  <span></span>
+                </div>
+                <input data-f="description" maxlength="300" value="${esc(describe(it))}">
+              </div>`).join('')}
+            </div>
+            <div class="wb-sum"><span>ზედნადების ჯამი</span> <b data-bill-total></b></div>
+          </div>`;
+      }).join('')}
+      <div class="lines-foot"><span class="muted small" data-count></span><span><span>სულ</span> <b data-total></b></span></div>`,
+    onOpen: (form) => {
+      const sync = () => {
+        let total = 0, count = 0;
+        $$('[data-bill]', form).forEach((b) => {
+          const take = $('[data-take]', b).checked;
+          b.classList.toggle('wb-off', !take);
+          const sum = $$('[data-f=amount]', b).reduce((s, i) => s + (numOrNull(i.value) || 0), 0);
+          $('[data-bill-total]', b).textContent = lari(sum);
+          if (!take) return;
+          total += sum;
+          count += $$('[data-line]', b).length;
+        });
+        $('[data-total]', form).textContent = lari(total);
+        $('[data-count]', form).textContent = tr(`${count} ჩანაწერი`);
+      };
+      form.addEventListener('input', sync);
+      form.addEventListener('change', sync);
+      sync();
+    },
+    onSubmit: async (form) => {
+      const rows = $$('[data-bill]', form).filter((b) => $('[data-take]', b).checked).flatMap((b) => {
+        const bill = bills[Number(b.dataset.bill)];
+        return $$('[data-line]', b).map((l) => ({
+          project_id: state.project.id,
+          direction: 'out',
+          entry_date: bill.date ?? todayISO(),
+          waybill_no: bill.number,
+          category: $('[data-f=category]', l).value,
+          amount: numOrNull($('[data-f=amount]', l).value),
+          description: $('[data-f=description]', l).value.trim() || null,
+        }));
+      });
+      if (!rows.length) throw new Error('მონიშნეთ ერთი ზედნადები მაინც.');
+      if (rows.some((r) => !(r.amount > 0))) throw new Error('ჩაწერეთ თანხა ყველა ხაზზე.');
+      await q(db.from('money').insert(rows));
+      await reloadMoney();
+      toast(`შენახულია ${rows.length} ჩანაწერი`);
+      renderMoney(el);
+    },
   });
 }

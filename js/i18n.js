@@ -193,6 +193,17 @@ const EN = {
   'აღწერა ქართულად': 'Description in Georgian',
   'დაამატეთ ერთი ხაზი მაინც.': 'Add at least one line.',
   'ჩაწერეთ თანხა ყველა ხაზზე.': 'Enter an amount on every line.',
+  'ზედნადებების იმპორტი (PDF)': 'Import waybills (PDF)',
+  'ზედნადებების იმპორტი': 'Import waybills',
+  'ზედნადების PDF-იდან შევსება': 'Fill in from a waybill PDF',
+  'PDF იკითხება…': 'Reading the PDF…',
+  'PDF-ის წამკითხველი ვერ ჩაიტვირთა. შეამოწმეთ ინტერნეტი.': 'The PDF reader could not load. Check the internet.',
+  'ამ PDF-ში ზედნადები ვერ მოიძებნა.': 'No waybill was found in this PDF.',
+  'თითოეული საქონელი ცალკე ჩანაწერად შეინახება. სახე შეცვალეთ, სადაც მასალა არ არის.': 'Each item is saved as its own entry. Change the type where it is not materials.',
+  'უკვე შეტანილია ამ პროექტში': 'Already entered on this project',
+  'უკვე შეტანილია სხვა პროექტში': 'Already entered on another project',
+  'მონიშნეთ ერთი ზედნადები მაინც.': 'Tick at least one waybill.',
+  'ზედნადების ჯამი': 'Waybill total',
 
   // Report
   'დაბეჭდეთ, ან ბეჭდვის ფანჯარაში აირჩიეთ "Save as PDF".': 'Print it, or choose "Save as PDF" in the print window.',
@@ -355,6 +366,9 @@ const PATTERNS = [
   [/^ვადაგადაცილებული: (\d+)$/, (m, a) => `overdue: ${a}`],
   [/^ზედნადები: (.+)$/s, (m, a) => `Waybill: ${a}`],
   [/^შენახულია (\d+) ჩანაწერი$/, (m, a) => `${a} entries saved`],
+  [/^(\d+) ჩანაწერი$/, (m, a) => `${a} entries`],
+  [/^ზედნადები (.+), სულ$/s, (m, a) => `Waybill ${a}, total`],
+  [/^საქონლის ჯამი (.+) - შეამოწმეთ$/s, (m, a) => `Items add up to ${a} - check`],
 ];
 
 /** One phrase in the interface's language. Georgian is returned as it is. */
