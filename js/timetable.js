@@ -41,9 +41,6 @@ export async function renderTimetable(el) {
 function row(t, today, range) {
   const status = taskStatus(t, today);
   const [label, chip] = STATUS[status];
-  const pct = (iso) => (daysBetween(range.from, iso) / range.days) * 100;
-  const left = pct(t.start_date);
-  const width = Math.max(pct(t.end_date) + 100 / range.days - left, 0.8);
   return `
     <tr ${isAdmin() ? `class="click" data-task="${t.id}"` : ''}>
       <td><b>${esc(pick(t, 'name'))}</b>${pick(t, 'notes') ? `<br><span class="muted small">${esc(pick(t, 'notes'))}</span>` : ''}
@@ -51,17 +48,24 @@ function row(t, today, range) {
       <td class="hide-phone">${esc(contractorName(t.contractor_id)) || '<span class="muted">-</span>'}</td>
       <td class="small" style="white-space:nowrap">${fmtDate(t.start_date)}<br>${fmtDate(t.end_date)}</td>
       <td><b>${t.progress}%</b><br><span class="chip ${chip}">${label}</span></td>
-      <td class="gantt-cell hide-phone">
-        <div class="gantt-track">
-          <div class="gantt-bar${status === 'late' ? ' late' : ''}" style="left:${left}%;width:${width}%"><span style="width:${t.progress}%"></span></div>
-          ${range.from <= today && today <= range.to ? `<div class="gantt-today" style="left:${pct(today)}%" title="დღეს"></div>` : ''}
-        </div>
-      </td>
+      <td class="gantt-cell hide-phone">${ganttTrack(t, today, range)}</td>
     </tr>`;
 }
 
+/** One item's bar on the time line, its done part filled, with today marked. */
+export function ganttTrack(t, today, range) {
+  const pct = (iso) => (daysBetween(range.from, iso) / range.days) * 100;
+  const left = pct(t.start_date);
+  const width = Math.max(pct(t.end_date) + 100 / range.days - left, 0.8);
+  return `
+    <div class="gantt-track">
+      <div class="gantt-bar${taskStatus(t, today) === 'late' ? ' late' : ''}" style="left:${left}%;width:${width}%"><span style="width:${t.progress}%"></span></div>
+      ${range.from <= today && today <= range.to ? `<div class="gantt-today" style="left:${pct(today)}%" title="დღეს"></div>` : ''}
+    </div>`;
+}
+
 /** From the earliest start to the latest finish, the project's own dates included. */
-function timeRange(tasks, today) {
+export function timeRange(tasks, today) {
   const dates = tasks.flatMap((t) => [t.start_date, t.end_date]);
   if (state.project.start_date) dates.push(state.project.start_date);
   if (state.project.end_date) dates.push(state.project.end_date);
@@ -72,7 +76,7 @@ function timeRange(tasks, today) {
 }
 
 /** Month marks over the bars - every month, or fewer on a long project. */
-function scale(range) {
+export function scale(range) {
   const marks = [];
   let y = Number(range.from.slice(0, 4));
   let m = Number(range.from.slice(5, 7));

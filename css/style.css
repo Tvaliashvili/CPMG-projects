@@ -195,11 +195,79 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 /* ---------- Report: one page to print or save as PDF ---------- */
 .report { display: grid; gap: 1.2rem; }
 .report section { break-inside: avoid; }
+.report > *, .glance > *, .two > * { min-width: 0; } /* a wide table scrolls inside its box, not the page */
 .report h2 { margin-bottom: 0.6rem; }
 .report-logo { display: block; height: 40px; width: auto; }
 .day-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.6rem; }
 .day-photos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: #e6ebf2; break-inside: avoid; }
 .report-head { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 0.8rem; border-bottom: 3px solid var(--navy); }
+.report-head h1 { margin: 0; }
+.report-head-right { text-align: right; flex-shrink: 0; }
+.report-date { font-size: 1.25rem; font-weight: 700; }
+.report-foot { margin: 0; padding-top: 0.6rem; border-top: 1px solid var(--line); }
+.eyebrow { margin: 0.6rem 0 0.1rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--navy-2); }
+.report h3 { margin: 0 0 0.6rem; font-size: 0.95rem; }
+.verdict { display: inline-block; margin-top: 0.4rem; padding: 0.2rem 0.7rem; border-radius: 99px; font-size: 0.82rem; font-weight: 700; background: #eef2f7; color: #475569; }
+.verdict-good { background: var(--green-bg); color: var(--green); }
+.verdict-bad { background: var(--red-bg); color: var(--red); }
+.stat small { display: block; margin-top: 0.2rem; font-size: 0.78rem; color: var(--muted); }
+.stat-good b { color: var(--green); }
+.stat-bad b { color: var(--red); }
+.stats-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.status-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 0.6rem; }
+.status-row .chip b { margin-left: 0.3rem; }
+/* Time strip: time gone (grey) against work done (green), today marked */
+.strip { display: grid; gap: 0.4rem; }
+.strip-ends { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; color: var(--muted); }
+.strip-ends b { color: var(--text); }
+.strip-track { position: relative; height: 14px; border-radius: 99px; background: #e8edf3; }
+.strip-time { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: #cbd5e1; }
+.strip-work { position: absolute; left: 0; top: 3px; bottom: 3px; border-radius: 99px; background: var(--green); }
+.strip-today { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--amber); }
+.strip-legend { display: flex; gap: 1.2rem; color: var(--muted); }
+.sw { display: inline-block; width: 10px; height: 10px; margin-right: 0.35rem; border-radius: 3px; vertical-align: -1px; }
+.sw-time { background: #cbd5e1; }
+.sw-work { background: var(--green); }
+.sw-plan { background: #64748b; }
+.sw-paid { background: var(--navy-2); }
+/* At a glance: progress ring beside the key figures */
+.glance { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; }
+.ring-box { display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1rem; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.ring-legend p { margin: 0.25rem 0; font-size: 0.88rem; }
+.ring-legend b { margin-left: 0.3rem; }
+/* Needs attention, coming up */
+.alerts, .ahead { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
+.alerts li { display: flex; gap: 0.5rem; font-size: 0.9rem; }
+.alerts i { flex: 0 0 1.2rem; height: 1.2rem; border-radius: 99px; font-style: normal; font-weight: 700; font-size: 0.75rem; text-align: center; line-height: 1.2rem; }
+.alert-bad i { background: var(--red-bg); color: var(--red); }
+.alert-warn i { background: var(--amber-bg); color: var(--amber); }
+.ahead li { display: flex; gap: 0.7rem; font-size: 0.9rem; }
+.ahead li > span:last-child { display: grid; }
+.ahead-date { flex: 0 0 3rem; padding: 0.1rem 0; border-radius: 6px; background: #eef2f7; text-align: center; font-weight: 700; font-size: 0.8rem; color: var(--navy); align-self: start; }
+/* Money */
+.meter-card { display: grid; gap: 0.3rem; margin-top: 0.8rem; }
+.meter-label { display: flex; justify-content: space-between; font-size: 0.88rem; }
+.bar-lg { height: 10px; }
+.bar-work > span { background: var(--green); }
+.hbars { display: grid; gap: 0.5rem; }
+.hbar { display: grid; grid-template-columns: 9rem 1fr auto 2.5rem; gap: 0.7rem; align-items: center; font-size: 0.88rem; }
+.hbar em { font-style: normal; text-align: right; }
+.pair-bars { display: grid; grid-template-columns: 1fr 2.6rem; gap: 0.25rem 0.5rem; align-items: center; min-width: 9rem; }
+.legend { display: flex; gap: 1.2rem; margin: 0.4rem 0 0; }
+/* Workers day by day */
+.wbars { display: flex; align-items: flex-end; gap: 3px; height: 110px; padding-top: 1rem; }
+.wbar { position: relative; flex: 1; height: 100%; display: flex; align-items: flex-end; border-bottom: 1px solid var(--line); }
+.wbar span { position: relative; display: block; width: 100%; border-radius: 3px 3px 0 0; background: #9db7dd; }
+.wbar.mark span { background: var(--navy); }
+.wbar i { position: absolute; left: 50%; bottom: calc(100% + 1px); transform: translateX(-50%); font-style: normal; font-size: 0.65rem; color: var(--muted); }
+.wbar.mark i { color: var(--navy); font-weight: 700; }
+.wbars-axis { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+/* Signatures at the foot of a day */
+.signs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; margin-top: 0.5rem; }
+.signs div { display: grid; gap: 0.2rem; }
+.signs i { height: 2.2rem; border-bottom: 1px solid #94a3b8; }
+.day-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 
 /* ---------- Phones ---------- */
 @media (max-width: 640px) {
@@ -218,6 +286,12 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
   th, td { padding: 0.5rem 0.6rem; }
   .hide-phone { display: none; }
   .show-phone { display: block; }
+  .two, .glance, .signs { grid-template-columns: 1fr; }
+  .report-head { flex-direction: column; }
+  .report-head-right { text-align: left; }
+  .hbar { grid-template-columns: 6rem 1fr auto; }
+  .hbar em { display: none; }
+  .strip-ends { flex-wrap: wrap; }
 }
 
 @media print {
@@ -229,5 +303,9 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
   .card, .stat, .table-wrap { border-color: #cbd5e1; }
   th { background: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .day-photos { grid-template-columns: repeat(2, 1fr); } /* two a row on paper */
+  .two { grid-template-columns: 1fr 1fr; } .glance { grid-template-columns: auto 1fr; } .signs { grid-template-columns: 1fr 1fr; }
+  .report-head { flex-direction: row; } .report-head-right { text-align: right; }
+  .report section, .report .card { break-inside: avoid; }
+  .verdict, .strip-track, .strip-time, .strip-work, .strip-today, .sw, .alerts i, .ahead-date, .wbar span, .gantt-track, .gantt-today,
   .bar, .bar > span, .chip, .gantt-bar, .gantt-bar > span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
