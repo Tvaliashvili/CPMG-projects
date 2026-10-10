@@ -204,6 +204,9 @@ const EN = {
   'უკვე შეტანილია სხვა პროექტში': 'Already entered on another project',
   'მონიშნეთ ერთი ზედნადები მაინც.': 'Tick at least one waybill.',
   'ზედნადების ჯამი': 'Waybill total',
+  'ძებნა: ზედნადების ნომერი ან აღწერა': 'Search: waybill number or description',
+  'ამ პროექტში ვერ მოიძებნა.': 'Not found on this project.',
+  'სხვა პროექტებში:': 'On other projects:',
 
   // Report
   'დაბეჭდეთ, ან ბეჭდვის ფანჯარაში აირჩიეთ "Save as PDF".': 'Print it, or choose "Save as PDF" in the print window.',
@@ -367,6 +370,7 @@ const PATTERNS = [
   [/^ზედნადები: (.+)$/s, (m, a) => `Waybill: ${a}`],
   [/^შენახულია (\d+) ჩანაწერი$/, (m, a) => `${a} entries saved`],
   [/^(\d+) ჩანაწერი$/, (m, a) => `${a} entries`],
+  [/^ნაპოვნია: (\d+)$/, (m, a) => `Found: ${a}`],
   [/^ზედნადები (.+), სულ$/s, (m, a) => `Waybill ${a}, total`],
   [/^საქონლის ჯამი (.+) - შეამოწმეთ$/s, (m, a) => `Items add up to ${a} - check`],
 ];

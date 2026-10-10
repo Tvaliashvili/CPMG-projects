@@ -6,6 +6,7 @@ import { readWaybills } from './waybill.js';
 import { state, isAdmin, reloadMoney, contractorName, CATEGORIES, IN_CATEGORIES, OUT_CATEGORIES, moneyTotals, moneyByMonth } from './state.js';
 
 let filter = 'all';
+let search = ''; // what the entries are searched for, kept while the page is redrawn
 let chart = null;
 
 export async function renderMoney(el) {
@@ -13,7 +14,6 @@ export async function renderMoney(el) {
   const months = moneyByMonth(state.money);
   const contractValue = Number(state.project.contract_value ?? 0);
   const fromClient = state.money.filter((m) => m.direction === 'in' && m.category === 'client').reduce((s, m) => s + Number(m.amount), 0);
-  const entries = state.money.filter((m) => filter === 'all' || m.direction === filter).slice().reverse();
 
   el.innerHTML = `
     <div class="page-head">
@@ -42,6 +42,39 @@ export async function renderMoney(el) {
       <h3>ჩანაწერები</h3>
       <div class="filter">${[['all', 'ყველა'], ['in', 'შემოსავალი'], ['out', 'გასავალი']].map(([k, label]) => `<button type="button" data-filter="${k}" class="${filter === k ? 'active' : ''}">${label}</button>`).join('')}</div>
     </div>
+    <div class="search-box">
+      <input type="search" data-search placeholder="ძებნა: ზედნადების ნომერი ან აღწერა" value="${esc(search)}">
+    </div>
+    <div data-entries></div>`;
+
+  $('[data-add]', el)?.addEventListener('click', () => moneyForm(null, el));
+  $('[data-import]', el)?.addEventListener('click', () => pickWaybills(el));
+  $$('[data-filter]', el).forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; renderMoney(el); }));
+  let timer;
+  $('[data-search]', el).addEventListener('input', (e) => {
+    search = e.target.value;
+    clearTimeout(timer);
+    timer = setTimeout(() => drawEntries(el), 250);
+  });
+  drawEntries(el);
+  drawChart($('canvas', el), months);
+}
+
+// Waybill numbers are written "ელ-1012225236", "ელ- 1012225236" or just the digits: compared without spaces and dashes.
+const plain = (v) => String(v ?? '').toLowerCase().replace(/[\s-]/g, '');
+let asked = 0; // the newest search sent to the database, so an older answer arriving late is dropped
+
+/** The entries list, narrowed by the filter and the search; and where else a searched waybill was entered. */
+function drawEntries(el) {
+  const box = $('[data-entries]', el);
+  const term = plain(search);
+  const entries = state.money
+    .filter((m) => filter === 'all' || m.direction === filter)
+    .filter((m) => !term || plain(m.waybill_no).includes(term) || plain(m.description).includes(term) || plain(m.description_en).includes(term))
+    .slice().reverse();
+  box.innerHTML = `
+    ${term ? `<p class="muted small search-note">${entries.length ? `ნაპოვნია: ${entries.length}` : 'ამ პროექტში ვერ მოიძებნა.'}</p>` : ''}
+    <div data-elsewhere></div>
     ${entries.length ? `
       <div class="table-wrap">
         <table>
@@ -58,13 +91,29 @@ export async function renderMoney(el) {
               <td class="num ${m.direction === 'in' ? 'good' : 'bad'}">${m.direction === 'in' ? '+' : '−'}${lari(m.amount)}</td>
             </tr>${waybillSum(entries, i)}`).join('')}</tbody>
         </table>
-      </div>` : '<div class="empty">ჩანაწერები ჯერ არ არის.</div>'}`;
+      </div>` : (term ? '' : '<div class="empty">ჩანაწერები ჯერ არ არის.</div>')}`;
+  $$('[data-entry]', box).forEach((tr) => tr.addEventListener('click', () => moneyForm(state.money.find((m) => m.id === tr.dataset.entry), el)));
+  elsewhere($('[data-elsewhere]', box), term);
+}
 
-  $('[data-add]', el)?.addEventListener('click', () => moneyForm(null, el));
-  $('[data-import]', el)?.addEventListener('click', () => pickWaybills(el));
-  $$('[data-filter]', el).forEach((b) => b.addEventListener('click', () => { filter = b.dataset.filter; renderMoney(el); }));
-  $$('[data-entry]', el).forEach((tr) => tr.addEventListener('click', () => moneyForm(state.money.find((m) => m.id === tr.dataset.entry), el)));
-  drawChart($('canvas', el), months);
+/** A waybill number searched for: the other projects it was entered on, if any. */
+async function elsewhere(box, term) {
+  const digits = term.replace(/\D/g, '');
+  const ask = ++asked;
+  if (digits.length < 4) return;
+  try {
+    const found = await q(db.from('money').select('waybill_no, project_id, entry_date, amount')
+      .ilike('waybill_no', `%${digits}%`).neq('project_id', state.project.id).limit(50));
+    if (ask !== asked || !found.length) return;
+    const projects = await q(db.from('projects').select('id, name, name_en').in('id', [...new Set(found.map((f) => f.project_id))]));
+    if (ask !== asked) return;
+    const byProject = projects.map((p) => {
+      const rows = found.filter((f) => f.project_id === p.id);
+      const numbers = [...new Set(rows.map((f) => f.waybill_no))];
+      return `<li><a href="#/p/${p.id}/money">${esc(pick(p, 'name'))}</a> - ${numbers.map(esc).join(', ')} · ${lari(rows.reduce((s, f) => s + Number(f.amount), 0))}</li>`;
+    });
+    box.innerHTML = `<div class="card search-else"><b>სხვა პროექტებში:</b><ul>${byProject.join('')}</ul></div>`;
+  } catch { /* the search here still stands */ }
 }
 
 /**

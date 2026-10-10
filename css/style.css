@@ -190,6 +190,11 @@ td.gantt-cell { width: 40%; min-width: 12rem; vertical-align: middle; }
 .line-del { height: 2rem; border: 0; border-radius: 6px; background: none; font-size: 1.2rem; line-height: 1; color: var(--muted); cursor: pointer; }
 .line-del:hover { background: var(--red-bg); color: var(--red); }
 .line-top .line-del[hidden] { display: block; visibility: hidden; }
+.search-box { margin-bottom: 0.6rem; }
+.search-box input { max-width: 26rem; }
+.search-note { margin: 0 0 0.5rem; }
+.search-else { margin-bottom: 0.8rem; background: var(--amber-bg); border-color: #f1d9ad; font-size: 0.9rem; }
+.search-else ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
 .head-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 /* Waybills read from a PDF, each with its items */
 .wb { display: grid; gap: 0.5rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
